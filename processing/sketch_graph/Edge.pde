@@ -4,8 +4,16 @@ class Edge {
   int sx, sy, ex, ey;
   Integer pixelDistance;
   
+  Node source, target;
+  
   public Edge(int s, int e, int pixelDist) {
     this(s, e);
+    this.pixelDistance = pixelDist;
+  }
+  
+  public Edge(Node s, Node t, int pixelDist) {
+    this.source = s;
+    this.target = t;
     this.pixelDistance = pixelDist;
   }
   

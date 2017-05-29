@@ -25,7 +25,7 @@ void setup() {
   //Graph g = createGraph();
   g = createGraph();
   g.findLandMarks();
-  sensor = sensorGraph(g);
+  sensor = createSensorGraph(g);
   /** print sensor positions */
   //for (Map.Entry<String, Integer> l : landMarks.entrySet()) {
   //  println(l.getKey() + " is at pixel " + l.getValue());
@@ -65,7 +65,55 @@ Graph createGraph() {
   return graph;
 }
 
-Graph sensorGraph(Graph g){
+Graph createSensorGraph(Graph g){
+  Graph sg = new Graph(myImage);
+  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
+    Node node = n.getValue();
+    if(node.getLabel() != null){
+      //sg.addNode(node);
+      
+      int pixelDist = 0;
+      Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+      distMap.put(node.getPixel(), pixelDist);
+      // dfs 
+      HashSet<Node> visited = new HashSet<Node>();
+      Stack<Node> toExplore = new Stack<Node>();
+      toExplore.push(node);
+            
+      // Do the search
+      while (!toExplore.empty()) {
+        Node curr = toExplore.pop();
+        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
+          node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+          continue;
+        }
+        
+        List<Edge> neighbors = curr.getNeighbours();
+        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+        while (it.hasPrevious()) {     //reverse. ???
+          //Node next = g.nodes.get(it.previous().endPixel);
+          //distMap.put(next.getPixel(), pixelDist);
+          Node next = it.previous().target;
+          if (next == null) {println("next is null"); break;}
+          println(next.getPixel());
+          distMap.put(next.getPixel(), pixelDist);
+          if (!visited.contains(next)) {
+            visited.add(next);
+            //parentMap.put(next, curr);
+            toExplore.push(next);
+          }
+        }
+        pixelDist++;
+      }
+      sg.addNode(node);
+    }
+  }  
+  println(sg.toString());
+  return sg;
+}
+
+/*
+Graph createSensorGraph(Graph g){
   Graph sg = new Graph(myImage);
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
     Node node = n.getValue();
@@ -86,9 +134,10 @@ Graph sensorGraph(Graph g){
       // Do the search
       while (!toExplore.empty()) {
         Node curr = toExplore.pop();
-        if(curr.getLabel() != null ) {
-          node.addNeighbour(curr.getPixel(), distMap.get(curr.getPixel()));
-          println("node name: " + node.getLabel()+ "    :     " + curr.getPixel(), curr.getLabel());
+        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
+          //node.addNeighbour(curr.getPixel(), distMap.get(curr.getPixel()));
+          node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+          //println("node name: " + node.getLabel()+ "    :     " + curr.getPixel(), curr.getLabel());
           continue;
         }
         //if (curr == goal) {
@@ -111,8 +160,9 @@ Graph sensorGraph(Graph g){
       sg.addNode(node);
     }
   }  
+  println(sg.toString());
   return sg;
-}
+}*/
 
 /** Get the pixel value based on x and y coordinates. 
     @param x -> x-coordinate
