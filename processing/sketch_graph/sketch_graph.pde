@@ -8,9 +8,18 @@ final color CAMPING = color(255.0, 106.0, 0.0);        // orange
 final color GATES = color(255.0, 0.0, 0.0);            // red
 
 final color WHITE = color(255.0, 255.0, 255.0);        // white to check non road pixels.
-//Graph g = createGraph();
 Graph g, sensor;
+
 int scale = 5;
+boolean DEBUG = false;
+
+void debugPrint(String s) {
+  if(DEBUG) println(s);
+}
+
+void debugPrint(boolean cond, String s) {
+  if (cond) { debugPrint(s); }
+}
 
 void setup() {
   //size(200, 200); 
@@ -21,30 +30,34 @@ void setup() {
   myImage = loadImage("/Users/atuladhar/projects/vastChallenge/lekagulRoadways_roads_only.png");
   myImage.loadPixels();
   
-  Map<Integer, String> landMarks = findSensorPositions();
-  //Graph g = createGraph();
-  g = createGraph();
-  g.findLandMarks();
-  sensor = createSensorGraph(g);
+  //Map<Integer, String> landMarks = findSensorPositions();    // Look for sensor locations.
   /** print sensor positions */
   //for (Map.Entry<String, Integer> l : landMarks.entrySet()) {
   //  println(l.getKey() + " is at pixel " + l.getValue());
   //}
-  myImage.updatePixels();
-  myImage.save("/Users/atuladhar/projects/vastChallenge/landMarks.png");
+  //myImage.updatePixels();
+  //myImage.save("/Users/atuladhar/projects/vastChallenge/landMarks.png");
+  
+  g = createGraph();    // Create the initial graph with all pixel points as nodes.
+  g.findLandMarks();    // find landmark nodes in the graph.
+  //sensor = createSensorGraph(g);    // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
+  sensor = createGraphBFS(g);
 }
 
 void draw() {
   //image(myImage, 0, 0);
   //plotSensorColors();
   
-  //Drawring Graph
+  //Drawing Graph
   background(255);
   //g.draw(scale);
   sensor.draw(scale);
+  save("graph_representation_bfs");
 }
 
-/** Create graph representation of the map */
+/** Create graph representation of the map 
+  * Each pixel on the road is represented as a node in the graph.
+  */
 
 Graph createGraph() {
   Graph graph = new Graph(myImage);
@@ -66,130 +79,59 @@ Graph createGraph() {
   return graph;
 }
 
-Graph createSensorGraph(Graph g){
+Graph createGraphBFS(Graph g) {
   Graph sg = new Graph(myImage);
-  int pixelDist = 0;
+  //int pixelDist = 0;
   Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
-  int breakCount = 0;
+
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
-    //Node node = new Node(n.getValue());
-    //if(n.getValue().getLabel() != null){
-    if(n.getValue().getLabel() != "DEFAULT"){
-      println("\n\n--------------------\n\n");
-      breakCount++;
+    if(n.getValue().getLabel() != null){
+    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("rangerStop5") || n.getValue().getLabel().equals("gates4"))){
       Node node = new Node(n.getValue());
       Node sgNode = new Node(n.getValue());
       sgNode.initNeighbours();
       
-      //sg.addNode(node);
-      pixelDist = 0;
-      //int pixelDist = 0;
-      //Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
-      distMap.put(node.getPixel(), pixelDist);
+      //pixelDist = 1;
+      distMap.put(node.getPixel(), 0);
       
-      // dfs init 
+      // dfs initialisation
       HashSet<Node> visited = new HashSet<Node>();
-      Stack<Node> toExplore = new Stack<Node>();
-      toExplore.push(node);
+      Queue<Node> toExplore = new LinkedList<Node>();
+      visited.add(node);
+      toExplore.add(node);
             
       // Do the search
-      while (!toExplore.empty()) {
-        Node curr = toExplore.pop();
-        //if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
-        if(curr.getLabel() != "DEFAULT" && curr.getPixel() != node.getPixel()) {
-          //node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+      while (!toExplore.isEmpty()) {
+        Node curr = toExplore.remove();
+        // if current node is a sensor and is not the source node then add to neigbour of source.
+        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
           sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
-          //println("here" + curr.getLabel());
           continue;
         }
         
         List<Edge> neighbors = curr.getNeighbours();
         ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-        //println (curr + " #neigbours = " + neighbors.size());
+                
         while (it.hasPrevious()) {     //reverse. ???
-          //Node next = g.nodes.get(it.previous().endPixel);
-          //distMap.put(next.getPixel(), pixelDist);
-          //Node next = it.previous().target;
-          Node next = g.nodes.get(it.previous().target.getPixel());
-          
-          // debug
-          //if (next == null) {println("next is null"); break;}
-          
-          distMap.put(next.getPixel(), pixelDist);
-          
-          //println("distmap entry: " + next + " + " + distMap.get(next.getPixel()));
-          
+          Node next = g.nodes.get(it.previous().target.getPixel());          
+                    
           if (!visited.contains(next)) {
-            //println("adding node to visited: " + next);
+            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
             visited.add(next);
-            //parentMap.put(next, curr);
-            toExplore.push(next);
+            toExplore.add(next);
           }
         }
-        pixelDist++;
-        //println("incrementing pixel Dist = " + pixelDist);
+        //pixelDist++;
+        //debugPrint("\n\npixelDistance = " + pixelDist);
       }
-      //sg.addNode(node);
       sg.addNode(sgNode);
     }
     //pixelDist++;
-    //if (breakCount == 40) break;
-  }  
-  //println(sg.toString());
-  return sg;
-}
-
-/*
-Graph createSensorGraph(Graph g){
-  Graph sg = new Graph(myImage);
-  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
-    Node node = n.getValue();
-    if(node.getLabel() != null){
-      //sg.addNode(node);
-      
-      int pixelDist = 0;
-      Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
-      distMap.put(node.getPixel(), pixelDist);
-      // dfs 
-      HashSet<Node> visited = new HashSet<Node>();
-      Stack<Node> toExplore = new Stack<Node>();
-      toExplore.push(node);
-      boolean found = false;
-      
-      //println("node name: " + node.getLabel());
-      
-      // Do the search
-      while (!toExplore.empty()) {
-        Node curr = toExplore.pop();
-        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
-          //node.addNeighbour(curr.getPixel(), distMap.get(curr.getPixel()));
-          node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
-          //println("node name: " + node.getLabel()+ "    :     " + curr.getPixel(), curr.getLabel());
-          continue;
-        }
-        //if (curr == goal) {
-        //  found = true;
-        //  break;
-        //}
-        List<Edge> neighbors = curr.getNeighbours();
-        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-        while (it.hasPrevious()) {     
-          Node next = g.nodes.get(it.previous().endPixel);
-          distMap.put(next.getPixel(), pixelDist);
-          if (!visited.contains(next)) {
-            visited.add(next);
-            //parentMap.put(next, curr);
-            toExplore.push(next);
-          }
-        }
-        pixelDist++;
-      }
-      sg.addNode(node);
-    }
   }  
   println(sg.toString());
   return sg;
-}*/
+}
 
 /** Get the pixel value based on x and y coordinates. 
     @param x -> x-coordinate
@@ -281,3 +223,68 @@ void plotSensorColors() {
   fill(255, 0, 0);
   rect(length * pos, length, length, length);
 }
+
+
+/** NOTE: Changed to BFS for counting pixels */
+/** Use the result from createGraph (with landmarks) to create a new minimized graph
+  * with only landmarks as nodes. Also calculates the pixel distances between the landmarks
+  */
+/** Graph createSensorGraph(Graph g){
+  Graph sg = new Graph(myImage);
+  //int pixelDist = 0;
+  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+
+  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
+    if(n.getValue().getLabel() != null){
+    //if(n.getValue().getLabel() == "rangerStop5" || n.getValue().getLabel() == "gates4"){
+      Node node = new Node(n.getValue());
+      Node sgNode = new Node(n.getValue());
+      sgNode.initNeighbours();
+      
+      //pixelDist = 0;
+      distMap.put(node.getPixel(), 0);
+      
+      // dfs initialisation
+      HashSet<Node> visited = new HashSet<Node>();
+      Stack<Node> toExplore = new Stack<Node>();
+      toExplore.push(node);
+      visited.add(node);
+            
+      // Do the search
+      while (!toExplore.empty()) {
+        println("HERERE!!!!!!!");
+        Node curr = toExplore.pop();
+        // if current node is a sensor and is not the source node then add to neigbour of source.
+        //if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
+        //if(curr.getLabel() != null && !curr.equals(node)) {
+        if(curr.getLabel() != null) {
+          println("Here not adding neigbours for node" + curr);
+          sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+          continue;
+        } else {
+          println("adding");
+        }
+        
+        List<Edge> neighbors = curr.getNeighbours();
+        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+                
+        while (it.hasPrevious()) {     //reverse. ???
+          Node next = g.nodes.get(it.previous().target.getPixel());          
+          //distMap.put(next.getPixel(), pixelDist);
+                    
+          if (!visited.contains(next)) {
+            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            visited.add(next);
+            toExplore.push(next);
+          }
+        }
+        //pixelDist++;
+      }
+      sg.addNode(sgNode);
+    }
+    //pixelDist++;
+  }  
+  println(sg.toString());
+  return sg;
+}
+*/

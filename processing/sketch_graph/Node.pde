@@ -1,6 +1,7 @@
 class Node {
   private int pixel, x, y;
-  private String label = "DEFAULT";
+  //private String label = "DEFAULT";
+  private String label;
   private List<Edge> neighbours;
   private color nodeColor;
   private int width;
@@ -11,6 +12,7 @@ class Node {
     this.width = width;
     this.x = pixel % width;
     this.y = pixel / width;
+    this.label = null;
     
     initNeighbours();
   }
@@ -61,6 +63,7 @@ class Node {
     return this.label;
   }
   
+  @Override
   public String toString() {
     String s = "";
     s += getLabel() + " @ ";
@@ -68,5 +71,24 @@ class Node {
     s += " pixel = " + getPixel();
     s += " R = " + red(getNodeColor()) + " G = " + green(getNodeColor()) + " B = " + blue(getNodeColor());   
     return s;
+  }
+  
+  @Override 
+  public boolean equals(Object other) {
+    if (!(other instanceof Node)) return false;
+    Node n = (Node) other;
+    return (this.getPixel() == n.getPixel()
+           && this.x == n.x 
+           && this.y == n.y 
+           && this.label.equals(n.label));
+  }
+  
+  @Override
+  public int hashCode(){
+    int hash = pixel;
+    hash = hash * 31 + x;
+    hash = hash * 31 + y;
+    hash = hash * 31 + (getLabel() != null ? getLabel().hashCode() : "DEFAULT".hashCode());
+    return hash;
   }
 }

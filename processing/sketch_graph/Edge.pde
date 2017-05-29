@@ -26,4 +26,23 @@ class Edge {
     this.ey = e / width;
     this.pixelDistance = Integer.MIN_VALUE;
   }
+  
+  @Override
+  public boolean equals(Object other){
+    if (!(other instanceof Edge)) return false;
+    
+    Edge e = (Edge) other;
+   
+    return (this.source.equals(e.source) 
+        && this.target.equals(e.target)
+        && this.pixelDistance.equals(e.pixelDistance));
+  }
+  
+  @Override 
+  public int hashCode() {
+    int hash = pixelDistance.hashCode();
+    hash = hash * 31 + source.hashCode();
+    hash = hash * 31 + target.hashCode();
+    return hash;
+  }
 }
