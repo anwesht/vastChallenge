@@ -112,13 +112,15 @@ class Graph {
   }
   */
   
-    void draw(int scale) {
+  void draw(int scale) {
     for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
       Node node = n.getValue();
-      if(node.getLabel() != null){
+      //if(node.getLabel() != null){
         fill(node.getNodeColor());
         ellipse(node.x * scale, node.y * scale, 5, 5);
-        text(node.getLabel(), node.x * scale + 6, node.y * scale + 6);
+        if(node.getLabel() != null){
+          text(node.getLabel(), node.x * scale + 6, node.y * scale + 6);
+        }
         
         //println("node name: " + node.getLabel());
 
@@ -132,7 +134,7 @@ class Graph {
           //line(e.sx * scale, e.sy * scale, e.ex * scale, e.ey * scale);
           //line(node.x * scale, node.y * scale, e.ex * scale, e.ey * scale);
         }
-      }
+      //}
     }  
   }
   
@@ -141,7 +143,7 @@ class Graph {
     String s = "";
     for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
       Node node = n.getValue();
-      s += node.getLabel() + " -> ";
+      s += node.getLabel() + " (" + node.getNeighbours().size() + ")" + " -> ";
       for (Edge e: node.getNeighbours()){
         if(e.target == null){ println("target null"); break; }
         s += e.target.getLabel();
