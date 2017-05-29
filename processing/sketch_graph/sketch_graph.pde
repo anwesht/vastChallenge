@@ -16,7 +16,8 @@ void setup() {
   //size(200, 200); 
   //int s = 200*scale;
   size(1000, 1000);      // scaling to get a bigger graph. multiplying in draw graph function.
-
+  noLoop();
+  
   myImage = loadImage("/Users/atuladhar/projects/vastChallenge/lekagulRoadways_roads_only.png");
   myImage.loadPixels();
   
@@ -79,12 +80,16 @@ Graph sensorGraph(Graph g){
       Stack<Node> toExplore = new Stack<Node>();
       toExplore.push(node);
       boolean found = false;
-    
+      
+      //println("node name: " + node.getLabel());
+      
       // Do the search
       while (!toExplore.empty()) {
         Node curr = toExplore.pop();
         if(curr.getLabel() != null ) {
           node.addNeighbour(curr.getPixel(), distMap.get(curr.getPixel()));
+          println("node name: " + node.getLabel()+ "    :     " + curr.getPixel(), curr.getLabel());
+          continue;
         }
         //if (curr == goal) {
         //  found = true;

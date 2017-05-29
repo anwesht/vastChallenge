@@ -81,10 +81,10 @@ class Graph {
       } 
       
       //debug
-      if(node.getLabel() != null){
-        println("node name: " + node.getLabel());
-        println("map node name: " + this.nodes.get(n.getKey()).getLabel());
-      }
+      //if(node.getLabel() != null){
+      //  println("node name: " + node.getLabel());
+      //  println("map node name: " + this.nodes.get(n.getKey()).getLabel());
+      //}
     }
   }
   
@@ -96,11 +96,16 @@ class Graph {
         ellipse(node.x * scale, node.y * scale, 5, 5);
         text(node.getLabel(), node.x * scale + 6, node.y * scale + 6);
         
+        //println("node name: " + node.getLabel());
+
         // Draw Edges.
         for(Edge e: node.getNeighbours()){
           fill(color(0,0,0));
+          //text(nodes.get(e.endPixel).getLabel(), node.x * scale + 6, node.y * scale - 6);
+          //println("neighbours: " + e.endPixel);
+
           //line(e.sx * scale, e.sy * scale, e.ex * scale, e.ey * scale);
-          line(node.x * scale, node.y * scale, e.ex * scale, e.ey * scale);
+          //line(node.x * scale, node.y * scale, e.ex * scale, e.ey * scale);
         }
       }
     }  
