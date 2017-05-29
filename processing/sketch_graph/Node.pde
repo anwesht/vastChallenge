@@ -63,6 +63,21 @@ class Node {
     return this.label;
   }
   
+  public String directionTo (Node dest) {
+    String direction = "O";
+    
+    if(dest.x < this.x && dest.y == this.y) direction = "W";
+    else if (dest.x > this.x && dest.y == this.y) direction = "E";
+    else if (dest.y < this.y && dest.x == this.x) direction = "N";
+    else if (dest.y < this.y && dest.x > this.x) direction = "NE";
+    else if (dest.y < this.y && dest.x < this.x) direction = "NW";
+    else if (dest.y > this.y && dest.x == this.x) direction = "S";
+    else if (dest.y > this.y && dest.x > this.x) direction = "SE";
+    else if (dest.y > this.y && dest.x < this.x) direction = "SW";
+    
+    return direction;
+  }
+  
   @Override
   public String toString() {
     String s = "";

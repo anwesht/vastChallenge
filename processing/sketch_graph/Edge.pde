@@ -3,6 +3,7 @@ class Edge {
   int startPixel, endPixel;
   int sx, sy, ex, ey;
   Integer pixelDistance;
+  String direction;
   
   Node source, target;
   
@@ -15,6 +16,7 @@ class Edge {
     this.source = s;
     this.target = t;
     this.pixelDistance = pixelDist;
+    this.direction = s.directionTo(t);
   }
   
   public Edge(int s, int e) {
@@ -35,6 +37,7 @@ class Edge {
    
     return (this.source.equals(e.source) 
         && this.target.equals(e.target)
+        && this.direction.equals(e.direction)
         && this.pixelDistance.equals(e.pixelDistance));
   }
   
@@ -42,6 +45,7 @@ class Edge {
   public int hashCode() {
     int hash = pixelDistance.hashCode();
     hash = hash * 31 + source.hashCode();
+    hash = hash * 31 + direction.hashCode();
     hash = hash * 31 + target.hashCode();
     return hash;
   }
