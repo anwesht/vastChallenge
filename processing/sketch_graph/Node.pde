@@ -12,7 +12,7 @@ class Node {
     this.x = pixel % width;
     this.y = pixel / width;
     
-    this.neighbours = new LinkedList<Edge>();
+    initNeighbours();
   }
   
   public Node(Node copy) {
@@ -31,6 +31,10 @@ class Node {
   
   public void addWeightedNeighbour(Node target, int pixelDist){
     this.neighbours.add(new Edge(this, new Node(target), pixelDist));
+  }
+  
+  public void initNeighbours() {
+    this.neighbours = new LinkedList<Edge>();
   }
   
   public List<Edge> getNeighbours(){
@@ -55,5 +59,14 @@ class Node {
   
   public String getLabel() {
     return this.label;
+  }
+  
+  public String toString() {
+    String s = "";
+    s += getLabel() + " @ ";
+    s += "(" + x + ", " + y + ")";
+    s += " pixel = " + getPixel();
+    s += " R = " + red(getNodeColor()) + " G = " + green(getNodeColor()) + " B = " + blue(getNodeColor());   
+    return s;
   }
 }

@@ -33,16 +33,16 @@ class Graph {
     
     List neighbours = new LinkedList<Integer>();
     
-    addNeighbour(x-1, y-1, neighbours);
-    addNeighbour(x, y-1, neighbours);
-    addNeighbour(x+1, y-1, neighbours);
+    //addNeighbour(x-1, y-1, neighbours);    // tl
+    addNeighbour(x, y-1, neighbours);      // t
+    //addNeighbour(x+1, y-1, neighbours);    // tr
+      
+    addNeighbour(x-1, y, neighbours);      // l
+    addNeighbour(x+1, y, neighbours);      // r
     
-    addNeighbour(x-1, y, neighbours);
-    addNeighbour(x+1, y, neighbours);
-    
-    addNeighbour(x-1, y+1, neighbours);
-    addNeighbour(x, y+1, neighbours);
-    addNeighbour(x+1, y+1, neighbours);
+    //addNeighbour(x-1, y+1, neighbours);    // bl
+    addNeighbour(x, y+1, neighbours);      // b
+    //addNeighbour(x+1, y+1, neighbours);    // br
     
     return neighbours;
   }

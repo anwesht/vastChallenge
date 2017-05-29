@@ -56,7 +56,8 @@ Graph createGraph() {
       Node node = new Node(i, graph.getWidth(), currentPixel);
       
       for (Integer n : graph.findNeighbours(i)){
-        node.addNeighbour(n);
+        //node.addNeighbour(n);
+        node.addWeightedNeighbour(new Node(n, graph.getWidth(), myImage.pixels[n]), 0);
       }
       
       graph.addNode(node);
@@ -67,15 +68,26 @@ Graph createGraph() {
 
 Graph createSensorGraph(Graph g){
   Graph sg = new Graph(myImage);
+  int pixelDist = 0;
+  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+  int breakCount = 0;
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
-    Node node = n.getValue();
-    if(node.getLabel() != null){
-      //sg.addNode(node);
+    //Node node = new Node(n.getValue());
+    //if(n.getValue().getLabel() != null){
+    if(n.getValue().getLabel() != "DEFAULT"){
+      println("\n\n--------------------\n\n");
+      breakCount++;
+      Node node = new Node(n.getValue());
+      Node sgNode = new Node(n.getValue());
+      sgNode.initNeighbours();
       
-      int pixelDist = 0;
-      Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+      //sg.addNode(node);
+      pixelDist = 0;
+      //int pixelDist = 0;
+      //Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
       distMap.put(node.getPixel(), pixelDist);
-      // dfs 
+      
+      // dfs init 
       HashSet<Node> visited = new HashSet<Node>();
       Stack<Node> toExplore = new Stack<Node>();
       toExplore.push(node);
@@ -83,32 +95,47 @@ Graph createSensorGraph(Graph g){
       // Do the search
       while (!toExplore.empty()) {
         Node curr = toExplore.pop();
-        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
-          node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+        //if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
+        if(curr.getLabel() != "DEFAULT" && curr.getPixel() != node.getPixel()) {
+          //node.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+          sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+          //println("here" + curr.getLabel());
           continue;
         }
         
         List<Edge> neighbors = curr.getNeighbours();
         ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+        //println (curr + " #neigbours = " + neighbors.size());
         while (it.hasPrevious()) {     //reverse. ???
           //Node next = g.nodes.get(it.previous().endPixel);
           //distMap.put(next.getPixel(), pixelDist);
-          Node next = it.previous().target;
-          if (next == null) {println("next is null"); break;}
-          println(next.getPixel());
+          //Node next = it.previous().target;
+          Node next = g.nodes.get(it.previous().target.getPixel());
+          
+          // debug
+          //if (next == null) {println("next is null"); break;}
+          
           distMap.put(next.getPixel(), pixelDist);
+          
+          //println("distmap entry: " + next + " + " + distMap.get(next.getPixel()));
+          
           if (!visited.contains(next)) {
+            //println("adding node to visited: " + next);
             visited.add(next);
             //parentMap.put(next, curr);
             toExplore.push(next);
           }
         }
         pixelDist++;
+        //println("incrementing pixel Dist = " + pixelDist);
       }
-      sg.addNode(node);
+      //sg.addNode(node);
+      sg.addNode(sgNode);
     }
+    //pixelDist++;
+    //if (breakCount == 40) break;
   }  
-  println(sg.toString());
+  //println(sg.toString());
   return sg;
 }
 
