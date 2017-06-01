@@ -11,7 +11,7 @@ final color WHITE = color(255.0, 255.0, 255.0);        // white to check non roa
 Graph g, sensor;
 
 int scale = 5;
-boolean DEBUG = true;
+boolean DEBUG = false;
 
 void debugPrint(String s) {
   if(DEBUG) println(s);
@@ -22,8 +22,6 @@ void debugPrint(boolean cond, String s) {
 }
 
 void setup() {
-  //size(200, 200); 
-  //int s = 200*scale;
   size(1000, 1000);      // scaling to get a bigger graph. multiplying in draw graph function.
   noLoop();
   
@@ -40,17 +38,12 @@ void setup() {
   
   g = createGraph();    // Create the initial graph with all pixel points as nodes.
   g.findLandMarks();    // find landmark nodes in the graph.
-  //sensor = createSensorGraph(g);    // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
-  sensor = createSensorGraphBFS(g);
-  //sensor = createSensorGraphDFS(g);
+  
+  // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
+  //sensor = createSensorGraphBFS(g);
+  sensor = createSensorGraphDFS(g); 
 }
-/* DFS result
-generalGate6 (14) -> generalGate5 (42), generalGate3 (230), camping2 (334), generalGate0 (402), generalGate2 (365), gates3 (336), camping1 (384), entrance2 (193), gates4 (127), gates5 (14), camping8 (66), gates8 (60), entrance4 (61), camping7 (85), 
-camping7 (1) -> generalGate6 (85), 
-*/
-/*BFS result
-generalGate6 (14) -> gates5 (14), generalGate5 (42), gates8 (60), entrance4 (61), camping8 (66), gates4 (67), camping7 (85), entrance2 (133), generalGate3 (170), camping2 (274), gates3 (276), generalGate2 (305), camping1 (324), generalGate0 (340), 
-camping7 (1) -> generalGate6 (85), */
+
 void draw() {
   //image(myImage, 0, 0);
   //plotSensorColors();
@@ -65,7 +58,6 @@ void draw() {
 /** Create graph representation of the map 
   * Each pixel on the road is represented as a node in the graph.
   */
-
 Graph createGraph() {
   Graph graph = new Graph(myImage);
   
@@ -86,10 +78,15 @@ Graph createGraph() {
   return graph;
 }
 
+/**
+generalGate6 (17) -> gates5 (14), generalGate5 (42), gates8 (60), entrance4 (61), camping8 (66), gates4 (67), camping7 (85), camping7 (87), entrance2 (133), generalGate3 (170), generalGate5 (216), camping2 (274), gates3 (276), generalGate2 (305), camping1 (324), generalGate0 (340), generalGate0 (342), 
+camping7 (1) -> generalGate6 (85), 
+*/
+
 Graph createSensorGraphBFS(Graph g) {
   Graph sg = new Graph(myImage);
   //int pixelDist = 0;
-  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+  //Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
 
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
     
@@ -107,6 +104,7 @@ Graph createSensorGraphBFS(Graph g) {
       debugPrint("\n\nSource node = " + node + "\n\n");
       
       //pixelDist = 1;
+      Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
       distMap.put(node.getPixel(), 0);
       
       // bfs initialisation
@@ -114,43 +112,35 @@ Graph createSensorGraphBFS(Graph g) {
       Queue<Node> toExplore = new LinkedList<Node>();
       visited.add(node);
       toExplore.add(node);
-      
-      HashSet<Edge> visitedEdges = new HashSet<Edge>();
             
       // Do the search
       while (!toExplore.isEmpty()) {
         Node curr = toExplore.remove();
         // if current node is a sensor and is not the source node then add to neigbour of source.
+        /*
         if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
           sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
           debugPrint(sgNode + "\n####Adding: " + curr + distMap.get(curr.getPixel()));
           continue;
         }
-        
+        */
         List<Edge> neighbors = curr.getNeighbours();
         ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
                 
         while (it.hasPrevious()) {     //reverse. ???
-          Edge e = it.previous();
-          //Node next = g.nodes.get(it.previous().target.getPixel());          
-          Node next = g.nodes.get(e.target.getPixel());
+          Node next = g.nodes.get(it.previous().target.getPixel());          
                     
-          // todo: fix for multiple paths between nodes. 
-          //if (!visited.contains(next)) {
-          //  distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-            
-          //  debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
-                        
-          //  visited.add(next);
-          //  toExplore.add(next);
-          //}  
-          
-          if (!visitedEdges.contains(e)) {
+          if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
+            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()));
+            debugPrint(sgNode + "\n####Adding to sensor graph: " + next + distMap.get(next.getPixel()));
+            //continue;
+          } else if (!visited.contains(next)) {
             distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
             
             debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
-                        
-            visitedEdges.add(e);
+            
+            visited.add(next);
             toExplore.add(next);
           }  
         }
@@ -167,7 +157,6 @@ Graph createSensorGraphBFS(Graph g) {
   return sg;
 }
 
-
 //Graph createSensorGraphBFS(Graph g) {
 //  Graph sg = new Graph(myImage);
 //  //int pixelDist = 0;
@@ -179,9 +168,9 @@ Graph createSensorGraphBFS(Graph g) {
 //    //     || n.getValue().getLabel().equals("gates4"))){ 
     
 //    //if(n.getValue().getLabel() != null && n.getValue().getLabel().equals("generalGate6")){
-//    if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
-//         || n.getValue().getLabel().equals("generalGate6"))){ 
-//    //if(n.getValue().getLabel() != null){
+//    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
+//    //     || n.getValue().getLabel().equals("generalGate6"))){ 
+//    if(n.getValue().getLabel() != null){
 //      Node node = new Node(n.getValue());
 //      Node sgNode = new Node(n.getValue());
 //      sgNode.initNeighbours();
@@ -237,69 +226,257 @@ Graph createSensorGraphBFS(Graph g) {
 //}
 
 
+/** Ouput
+generalGate6 (17) -> generalGate5 (42), generalGate3 (230), camping2 (334), generalGate0 (402), generalGate0 (400), generalGate2 (365), gates3 (336), camping1 (384), generalGate5 (276), entrance2 (193), gates4 (127), gates5 (14), camping8 (66), gates8 (60), entrance4 (61), camping7 (85), camping7 (87), 
+camping7 (1) -> generalGate6 (85), 
+*/
+
 /** NOTE: Changed to BFS for counting pixels */
 /** Use the result from createGraph (with landmarks) to create a new minimized graph
   * with only landmarks as nodes. Also calculates the pixel distances between the landmarks
   */
+  
 Graph createSensorGraphDFS(Graph g){
   Graph sg = new Graph(myImage);
-  //int pixelDist = 0;
   Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
 
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
     //if(n.getValue().getLabel() == "rangerStop5" || n.getValue().getLabel() == "gates4"){ 
-    if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
-         || n.getValue().getLabel().equals("generalGate6"))){ 
-    //if(n.getValue().getLabel() != null){
-      Node node = new Node(n.getValue());
+    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
+    //     || n.getValue().getLabel().equals("generalGate6"))){ 
+    if(n.getValue().getLabel() != null){
+      Node sourceNode = new Node(n.getValue());
       Node sgNode = new Node(n.getValue());
       sgNode.initNeighbours();
       
-      //pixelDist = 0;
-      distMap.put(node.getPixel(), 0);
-      
-      // dfs initialisation
-      HashSet<Node> visited = new HashSet<Node>();
-      Stack<Node> toExplore = new Stack<Node>();
-      toExplore.push(node);
-      visited.add(node);
-            
-      // Do the search
-      while (!toExplore.empty()) {
-        //println("HERERE!!!!!!!");
-        Node curr = toExplore.pop();
-        // if current node is a sensor and is not the source node then add to neigbour of source.
-        //if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
-        //if(curr.getLabel() != null && !curr.equals(node)) {
-        //if(curr.getLabel() != null) {
-        if (curr.getLabel() != null && curr.getPixel() != node.getPixel()){
-          //println("Here not adding neigbours for node" + curr);
-          sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
-          continue;
-        }
+      //println("\n\nCurrent Search Node: " + sourceNode);
+      for (Edge sourceNeighbor : sourceNode.getNeighbours()) {
+        Node node = g.nodes.get(sourceNeighbor.target.getPixel());
+        Node prev = node;
+        distMap.clear();
+        distMap.put(node.getPixel(), 1);
         
-        List<Edge> neighbors = curr.getNeighbours();
-        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-                
-        while (it.hasPrevious()) {     //reverse. ???
-          Node next = g.nodes.get(it.previous().target.getPixel());          
-          //distMap.put(next.getPixel(), pixelDist);
-                    
-          if (!(visited.contains(next)) || next.getLabel() != null) {
-            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-            visited.add(next);
-            toExplore.push(next);
+        // dfs initialisation
+        HashSet<Node> visited = new HashSet<Node>();
+        Stack<Node> toExplore = new Stack<Node>();
+        toExplore.push(node);
+        visited.add(node);
+              
+        // Do the search
+        while (!toExplore.empty()) {
+          Node curr = toExplore.pop();
+          
+          List<Edge> neighbors = curr.getNeighbours();
+          
+          //remove parent node
+          neighbors.remove(prev);
+          
+          ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+          //println("Popped = " + curr + " neighbours = " + neighbors.size());
+          
+          while (it.hasPrevious()) {     //reverse. ???
+            Node next = g.nodes.get(it.previous().target.getPixel());
+            
+            //if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
+            if(next.getLabel() != null && next.getPixel() != sourceNode.getPixel()) {
+              distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+              sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()));
+              debugPrint(sgNode + "\n####Adding to sensor graph: " + next + distMap.get(next.getPixel()));
+            } else if (!visited.contains(next)) {
+              distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+              
+              debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+              
+              visited.add(next);
+              toExplore.push(next);
+            }
+            /*else if (visited.contains(next) && distMap.get(curr.getPixel()) != distMap.get(next.getPixel()) && next.getLabel() == null) {
+              println("Visited contains: " + next +  " " + distMap.get(curr.getPixel()) + " == " + distMap.get(next.getPixel()));
+              distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+              
+              debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+              
+              //visited.add(next);
+              toExplore.push(next);
+            }*/
+            //if(visited.contains(next)){
+            //  println("visited Contains this: " + next);
+            //  println(distMap.get(next.getPixel()) + " = " + distMap.get(curr.getPixel()));
+            //}
+            //if(next.getPixel() == node.getPixel()) {
+            //  println("\n\nREACHED HOME !!!" + toExplore.empty());
+            //  visited.clear();
+            //  //distMap
+            //}
           }
+          prev = curr;
         }
-        //pixelDist++;
+        sg.addNode(sgNode);
       }
-      sg.addNode(sgNode);
     }
-    //pixelDist++;
   }  
   println(sg.toString());
   return sg;
 }
+  
+//Graph createSensorGraphDFS(Graph g){
+//  Graph sg = new Graph(myImage);
+//  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+
+//  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
+//    //if(n.getValue().getLabel() == "rangerStop5" || n.getValue().getLabel() == "gates4"){ 
+//    if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
+//         || n.getValue().getLabel().equals("generalGate6"))){ 
+//    //if(n.getValue().getLabel() != null){
+//      Node node = new Node(n.getValue());
+//      Node sgNode = new Node(n.getValue());
+//      sgNode.initNeighbours();
+      
+//      println("\n\nCurrent Search Node: " + node);
+      
+//      //pixelDist = 0;
+//      //Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+//      distMap.clear();
+//      distMap.put(node.getPixel(), 0);
+      
+//      // dfs initialisation
+//      HashSet<Node> visited = new HashSet<Node>();
+//      Stack<Node> toExplore = new Stack<Node>();
+//      toExplore.push(node);
+//      visited.add(node);
+            
+//      // Do the search
+//      while (!toExplore.empty()) {
+//        Node curr = toExplore.pop();
+//        // if current node is a sensor and is not the source node then add to neigbour of source.
+//        //if (curr.getLabel() != null && curr.getPixel() != node.getPixel()){
+//        //  sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+//        //  Node peek = toExplore.peek();
+//        //  println("Reached : " + curr + "  " + node);
+//        //  println("Peeking next object: " + peek);
+//        //  println("Distance from parent: " + distMap.get(peek.getPixel()));
+//        //  continue;
+//        //}
+//        if(curr.getPixel() == 29381) {
+//          println("\n\nHERHERHERHEHREH!!!!!!!\n\n");
+//        }
+        
+//        List<Edge> neighbors = curr.getNeighbours();
+//        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+//        println("Popped = " + curr + " neighbours = " + neighbors.size());
+        
+//        while (it.hasPrevious()) {     //reverse. ???
+//          Node next = g.nodes.get(it.previous().target.getPixel());
+          
+//          //if (!(visited.contains(next))) {
+//          //  distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+//          //  visited.add(next);
+//          //  toExplore.push(next);
+//          //}
+//          if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
+//            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+//            sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()));
+//            debugPrint(sgNode + "\n####Adding to sensor graph: " + next + distMap.get(next.getPixel()));
+            
+//            if(!toExplore.empty()){
+//              Node peek = toExplore.peek();
+//              println("\nReached : " + next + "  " + node);
+//              println("Peeking next object: " + peek);
+//              println("Distance from parent: " + distMap.get(peek.getPixel()) + "\n");
+//              if(visited.contains(next)){
+//                println("visited Contains this: " + distMap.get(peek.getPixel()));
+//              }
+//              //continue;
+//            }
+//          } else if (!visited.contains(next)) {
+//          //} else if (!visited.contains(next) || (visited.contains(next) && distMap.get(next.getPixel()) != (distMap.get(curr.getPixel()) + 1))) {
+//            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            
+//            debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+            
+//            visited.add(next);
+//            toExplore.push(next);
+//          }
+//          /*else if (visited.contains(next) && distMap.get(curr.getPixel()) != distMap.get(next.getPixel()) && next.getLabel() == null) {
+//            println("Visited contains: " + next +  " " + distMap.get(curr.getPixel()) + " == " + distMap.get(next.getPixel()));
+//            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            
+//            debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+            
+//            //visited.add(next);
+//            toExplore.push(next);
+//          }*/
+//          //if(visited.contains(next)){
+//          //  println("visited Contains this: " + next);
+//          //  println(distMap.get(next.getPixel()) + " = " + distMap.get(curr.getPixel()));
+//          //}
+//          if(next.getPixel() == node.getPixel()) {
+//            println("\n\nREACHED HOME !!!" + toExplore.empty());
+//            visited.clear();
+//            //distMap
+//          }
+//        }
+//      }
+//      sg.addNode(sgNode);
+//    }
+//  }  
+//  println(sg.toString());
+//  return sg;
+//}
+//Graph createSensorGraphDFS(Graph g){
+//  Graph sg = new Graph(myImage);
+//  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+
+//  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
+//    //if(n.getValue().getLabel() == "rangerStop5" || n.getValue().getLabel() == "gates4"){ 
+//    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
+//    //     || n.getValue().getLabel().equals("generalGate6"))){ 
+//    if(n.getValue().getLabel() != null){
+//      Node node = new Node(n.getValue());
+//      Node sgNode = new Node(n.getValue());
+//      sgNode.initNeighbours();
+      
+//      //pixelDist = 0;
+//      distMap.put(node.getPixel(), 0);
+      
+//      // dfs initialisation
+//      HashSet<Node> visited = new HashSet<Node>();
+//      Stack<Node> toExplore = new Stack<Node>();
+//      toExplore.push(node);
+//      visited.add(node);
+            
+//      // Do the search
+//      while (!toExplore.empty()) {
+//        Node curr = toExplore.pop();
+//        // if current node is a sensor and is not the source node then add to neigbour of source.
+//        if (curr.getLabel() != null && curr.getPixel() != node.getPixel()){
+//          sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+//          continue;
+//        }
+        
+//        List<Edge> neighbors = curr.getNeighbours();
+//        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+                
+//        while (it.hasPrevious()) {     //reverse. ???
+//          Node next = g.nodes.get(it.previous().target.getPixel());        
+                    
+//          if (!(visited.contains(next)) || next.getLabel() != null) {
+//            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+//            visited.add(next);
+//            toExplore.push(next);
+//          }
+//        }
+//      }
+//      sg.addNode(sgNode);
+//    }
+//  }  
+//  println(sg.toString());
+//  return sg;
+//}
+
+
+
+
 
 /** Get the pixel value based on x and y coordinates. 
     @param x -> x-coordinate
@@ -391,3 +568,85 @@ void plotSensorColors() {
   fill(255, 0, 0);
   rect(length * pos, length, length, length);
 }
+
+
+//Graph createSensorGraphBFS(Graph g) {
+//  Graph sg = new Graph(myImage);
+//  //int pixelDist = 0;
+//  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+
+//  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
+    
+//    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("rangerStop5") 
+//    //     || n.getValue().getLabel().equals("gates4"))){ 
+    
+//    //if(n.getValue().getLabel() != null && n.getValue().getLabel().equals("generalGate6")){
+//    //if(n.getValue().getLabel() != null && (n.getValue().getLabel().equals("camping7") 
+//    //     || n.getValue().getLabel().equals("generalGate6"))){ 
+//    if(n.getValue().getLabel() != null){
+//      Node node = new Node(n.getValue());
+//      Node sgNode = new Node(n.getValue());
+//      sgNode.initNeighbours();
+      
+//      debugPrint("\n\nSource node = " + node + "\n\n");
+      
+//      //pixelDist = 1;
+//      distMap.put(node.getPixel(), 0);
+      
+//      // bfs initialisation
+//      HashSet<Node> visited = new HashSet<Node>();
+//      Queue<Node> toExplore = new LinkedList<Node>();
+//      visited.add(node);
+//      toExplore.add(node);
+      
+//      HashSet<Edge> visitedEdges = new HashSet<Edge>();
+
+//      // Do the search
+//      while (!toExplore.isEmpty()) {
+//        Node curr = toExplore.remove();
+//        // if current node is a sensor and is not the source node then add to neigbour of source.
+//        if(curr.getLabel() != null && curr.getPixel() != node.getPixel()) {
+//          sgNode.addWeightedNeighbour(curr, distMap.get(curr.getPixel()));
+//          debugPrint(sgNode + "\n####Adding: " + curr + distMap.get(curr.getPixel()));
+//          continue;
+//        }
+        
+//        List<Edge> neighbors = curr.getNeighbours();
+//        ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
+                
+//        while (it.hasPrevious()) {     //reverse. ???
+//          Edge e = it.previous();
+//          //Node next = g.nodes.get(it.previous().target.getPixel());          
+//          Node next = g.nodes.get(e.target.getPixel());
+                    
+//          // todo: fix for multiple paths between nodes. 
+//          //if (!visited.contains(next)) {
+//          //  distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            
+//          //  debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+                        
+//          //  visited.add(next);
+//          //  toExplore.add(next);
+//          //}  
+          
+//          if (!visitedEdges.contains(e)) {
+//            distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+            
+//            debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
+                        
+//            visitedEdges.add(e);
+//            toExplore.add(next);
+//          }  
+//        }
+//        debugPrint("End of current node: " + curr + "\n\n");
+//        //pixelDist++;
+//        //debugPrint("\n\npixelDistance = " + pixelDist);
+//      }
+//      debugPrint("End of loop");
+//      sg.addNode(sgNode);
+//    }
+//    //pixelDist++;
+//  }  
+//  println(sg.toString());
+//  return sg;
+//}
