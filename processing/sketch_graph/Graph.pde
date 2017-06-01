@@ -127,7 +127,21 @@ class Graph {
         // Draw Edges.
         for(Edge e: node.getNeighbours()){
           fill(color(0,0,0));
-          line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
+          //line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
+          
+          if(e.path.isEmpty()){
+            println("NO PATH");
+            line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
+          } else {
+            println("HAS PATH");
+            for(Integer i : e.path) {
+              int x = i % this.width;
+              int y = i / this.width;
+              ellipse(x * scale, y * scale, 5, 5);
+            }
+          }
+            
+          
           //text(nodes.get(e.endPixel).getLabel(), node.x * scale + 6, node.y * scale - 6);
           //println("neighbours: " + e.endPixel);
 

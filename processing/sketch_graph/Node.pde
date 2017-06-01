@@ -35,6 +35,10 @@ class Node {
     this.neighbours.add(new Edge(this, new Node(target), pixelDist));
   }
   
+  public void addWeightedNeighbour(Node target, int pixelDist, List<Integer> path){
+    this.neighbours.add(new Edge(this, new Node(target), pixelDist, path));
+  }
+  
   public void initNeighbours() {
     this.neighbours = new LinkedList<Edge>();
   }

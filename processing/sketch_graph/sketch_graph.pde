@@ -239,6 +239,7 @@ camping7 (1) -> generalGate6 (85),
 Graph createSensorGraphDFS(Graph g){
   Graph sg = new Graph(myImage);
   Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();
+  Map<Integer, List<Integer>> pathMap = new HashMap<Integer, List<Integer>>();
 
   for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
     //if(n.getValue().getLabel() == "rangerStop5" || n.getValue().getLabel() == "gates4"){ 
@@ -255,6 +256,9 @@ Graph createSensorGraphDFS(Graph g){
         Node prev = node;
         distMap.clear();
         distMap.put(node.getPixel(), 1);
+        
+        pathMap.clear();
+        pathMap.put(node.getPixel(), new LinkedList<Integer>());
         
         // dfs initialisation
         HashSet<Node> visited = new HashSet<Node>();
@@ -280,10 +284,24 @@ Graph createSensorGraphDFS(Graph g){
             //if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
             if(next.getLabel() != null && next.getPixel() != sourceNode.getPixel()) {
               distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-              sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()));
+              
+              List currentPath = new LinkedList<Integer>(pathMap.get(curr.getPixel()));
+              currentPath.add(next.getPixel());
+              pathMap.put(next.getPixel(), currentPath);
+              
+              //pathMap.get(curr.getPixel()).add(next.getPixel());
+              
+              sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()), pathMap.get(next.getPixel()));
+              
               debugPrint(sgNode + "\n####Adding to sensor graph: " + next + distMap.get(next.getPixel()));
             } else if (!visited.contains(next)) {
               distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
+              
+              List currentPath = new LinkedList<Integer>(pathMap.get(curr.getPixel()));
+              currentPath.add(next.getPixel());
+              pathMap.put(next.getPixel(), currentPath);
+            
+              println("TEST: " + pathMap.get(next.getPixel()).size());
               
               debugPrint(curr + " Adding :" + next + " pixelDistance is:: " + distMap.get(next.getPixel()));
               
