@@ -98,8 +98,9 @@ class Node {
     Node n = (Node) other;
     return (this.getPixel() == n.getPixel()
            && this.x == n.x 
-           && this.y == n.y 
-           && this.label.equals(n.label));
+           && this.y == n.y
+           && this.label == n.label);
+           //&& this.label.equals(n.label));
   }
   
   @Override

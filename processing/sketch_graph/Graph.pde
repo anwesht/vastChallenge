@@ -130,18 +130,20 @@ class Graph {
           //line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
           
           if(e.path.isEmpty()){
-            println("NO PATH");
             line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
           } else {
-            println("HAS PATH");
+            
             for(Integer i : e.path) {
               int x = i % this.width;
               int y = i / this.width;
-              ellipse(x * scale, y * scale, 5, 5);
+              ellipse(x * scale, y * scale, 2, 2);
             }
           }
-            
           
+          fill(e.target.getNodeColor());
+          //ellipse(e.target.getPixel() * scale, e.target.getPixel() * scale, 2, 5);
+          triangle(e.target.x * scale, e.target.y * scale, e.target.x * scale + 3, e.target.y * scale + 3, e.target.x * scale - 3, e.target.y * scale + 3);
+          text(e.target.getLabel(), e.target.x * scale + 6, e.target.y * scale + 6);
           //text(nodes.get(e.endPixel).getLabel(), node.x * scale + 6, node.y * scale - 6);
           //println("neighbours: " + e.endPixel);
 
@@ -149,6 +151,7 @@ class Graph {
           //line(node.x * scale, node.y * scale, e.ex * scale, e.ey * scale);
         }
       //}
+      //if(node.getLabel() != null){ break; }
     }  
   }
   
