@@ -67,6 +67,10 @@ class Node {
     return this.label;
   }
   
+  public String getName() {
+    return this.getLabel() != null ? this.getLabel() : Integer.toString(this.getPixel());
+  }
+  
   public String directionTo (Node dest) {
     String direction = "O";
     
