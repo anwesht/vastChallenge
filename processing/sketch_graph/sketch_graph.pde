@@ -69,11 +69,8 @@ Graph createGraph() {
       Node node = new Node(i, graph.getWidth(), currentPixel);
       
       for (Integer n : graph.findNeighbours(i)){
-        //node.addNeighbour(n);
         node.addWeightedNeighbour(new Node(n, graph.getWidth(), myImage.pixels[n]), 0);
       }
-      
-      //graph.addNode(node);
       graph.addNamedNode(node);
     }
   }
@@ -83,98 +80,6 @@ Graph createGraph() {
 /** Use the result from createGraph (with landmarks) to create a new minimized graph
   * with only landmarks as nodes. Also calculates the pixel distances between the landmarks
   */
-//Graph createSensorGraphDFS(Graph g){
-//  Graph sg = new Graph(myImage);
-//  Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();       // to count pixel distance.
-//  Map<Integer, List<Integer>> pathMap = new HashMap<Integer, List<Integer>>();    // to track the path of the edge.
-  
-//  boolean isDeeper = true; 
-//  int depth = 0;
-
-//  for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
-//    if(n.getValue().getLabel() != null){
-//      Node node = new Node(n.getValue());    // A sensor node
-//      Node sgNode = new Node(n.getValue());        // Create a new node for the sensor graph
-//      sgNode.initNeighbours();                     // Initialise neighbours for sensor graph node
-      
-//      //for (Edge sourceNeighbor : sourceNode.getNeighbours()) {  // loop over all immediate neighbours of the sensor node.
-//        //Node node = g.nodes.get(sourceNeighbor.target.getPixel());  
-//        Node prev = node;    // track previous node to remove from the neighbour list of current node.
-        
-//        distMap.clear();      // start fresh for each immediate neighbour of sensor node.
-//        distMap.put(node.getPixel(), 1);    // each immediate neighbour of sensor node is 1 pixel away.
-        
-//        pathMap.clear();      // start fresh for each immediate neighbour of sensor node.
-//        pathMap.put(node.getPixel(), new LinkedList<Integer>());  
-        
-//        // dfs initialisation
-//        //HashSet<Node> visited = new HashSet<Node>();
-//        LinkedList<Node> visited = new LinkedList<Node>();
-        
-//        Stack<Node> toExplore = new Stack<Node>();
-//        toExplore.push(node);
-//        visited.add(node);
-//        depth = 1;
-        
-//        int loopCount = 0;
-//        // Do the search
-//        while (!toExplore.empty()) {
-//          Node curr = toExplore.pop();
-          
-//          if(!isDeeper){
-//            println("size = " + visited.size() + " depth = " + depth);
-//            if(!visited.isEmpty()) visited.subList(visited.size() - depth, visited.size()).clear(); 
-//            depth = visited.size();
-//            if (loopCount > 20) break;
-//          } 
-          
-//          List<Edge> neighbors = curr.getNeighbours();
-          
-//          //remove parent node
-//          neighbors.remove(prev);
-          
-//          ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-          
-//          while (it.hasPrevious()) {     //reverse. ???
-//            Node next = g.nodes.get(it.previous().target.getPixel());
-            
-//            //if(next.getLabel() != null && next.getPixel() != sourceNode.getPixel()) {
-//            if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
-//              distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-              
-//              List currentPath = new LinkedList<Integer>(pathMap.get(curr.getPixel()));
-//              //currentPath.add(next.getPixel());
-//              pathMap.put(next.getPixel(), currentPath);
-              
-//              //pathMap.get(curr.getPixel()).add(next.getPixel());
-              
-//              sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()), pathMap.get(next.getPixel()));
-//              isDeeper = false;
-//            } else if (!visited.contains(next)) {
-//              distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-              
-//              List currentPath = new LinkedList<Integer>(pathMap.get(curr.getPixel()));
-//              currentPath.add(next.getPixel());
-//              pathMap.put(next.getPixel(), currentPath);
-                                        
-//              visited.add(next);
-//              toExplore.push(next);
-//              isDeeper = true;
-//              depth++;
-//            } else {
-//              loopCount++;
-//            }
-//          }
-//          prev = curr;
-//        }
-//        sg.addNode(sgNode);
-//      //}
-//    }
-//  }  
-//  println(sg.toString());
-//  return sg;
-//}
-
 Graph createSensorGraphDFS(Graph g){
   Graph sg = new Graph(myImage);
   Map<Integer, Integer> distMap = new HashMap<Integer, Integer>();       // to count pixel distance.
@@ -182,7 +87,6 @@ Graph createSensorGraphDFS(Graph g){
   
   int depth = 0;
 
-  //for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
   for (Map.Entry<String, Node> n : g.namedNodes.entrySet()){
     if(n.getValue().getLabel() != null){
       Node sourceNode = new Node(n.getValue());    // A sensor node
@@ -190,7 +94,6 @@ Graph createSensorGraphDFS(Graph g){
       sgNode.initNeighbours();                     // Initialise neighbours for sensor graph node
       
       for (Edge sourceNeighbor : sourceNode.getNeighbours()) {  // loop over all immediate neighbours of the sensor node.
-        //Node node = g.nodes.get(sourceNeighbor.target.getPixel());  
         Node node = g.namedNodes.get(sourceNeighbor.target.getName());
         Node prev = node;    // track previous node to remove from the neighbour list and check backtracking.
         
@@ -224,7 +127,6 @@ Graph createSensorGraphDFS(Graph g){
           ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
           
           while (it.hasPrevious()) {     //reverse. ???
-            //Node next = g.nodes.get(it.previous().target.getPixel());
             Node next = g.namedNodes.get(it.previous().target.getName());
             
             if(next.getLabel() != null && next.getPixel() != sourceNode.getPixel()) {
@@ -259,7 +161,6 @@ Graph createSensorGraphDFS(Graph g){
 Graph createSensorGraphBFS(Graph g) {
   Graph sg = new Graph(myImage);
 
-  //for (Map.Entry<Integer, Node> n : g.nodes.entrySet()){
   for (Map.Entry<String, Node> n : g.getNamedNodes().entrySet()){
     if(n.getValue().getLabel() != null){
       Node node = new Node(n.getValue());
@@ -282,8 +183,7 @@ Graph createSensorGraphBFS(Graph g) {
         List<Edge> neighbors = curr.getNeighbours();
         ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
                 
-        while (it.hasPrevious()) {     //reverse. ???
-          //Node next = g.nodes.get(it.previous().target.getPixel());          
+        while (it.hasPrevious()) {     //reverse. ???     
           Node next = g.getNamedNodes().get(it.previous().target.getName());
                     
           if(next.getLabel() != null && next.getPixel() != node.getPixel()) {
@@ -291,13 +191,11 @@ Graph createSensorGraphBFS(Graph g) {
             sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()));
           } else if (!visited.contains(next)) {
             distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
-                        
             visited.add(next);
             toExplore.add(next);
           }  
         }
       }
-      //sg.addNode(sgNode);
       sg.addNamedNode(sgNode);
     }
   }  

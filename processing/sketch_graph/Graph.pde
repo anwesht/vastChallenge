@@ -2,14 +2,12 @@ class Graph {
   final color WHITE = color(255.0, 255.0, 255.0); 
   private int width;
   private Map<String, Integer> sensorCounts;
-  //private Map<Integer, Node> nodes;
   private Map<String, Node> namedNodes;
   PImage mapImage;
   
   public Graph(PImage img) {
     this.mapImage = img;
     this.width = img.width;
-    //this.nodes = new LinkedHashMap<Integer, Node>();
     this.namedNodes = new LinkedHashMap<String, Node>();
     this.sensorCounts = new LinkedHashMap<String, Integer>();
   }    
@@ -57,26 +55,18 @@ class Graph {
       neighbours.add(p);
     }
   }
-  
-  //private void addNode(Node n) {
-  //  this.nodes.put(n.getPixel(), n);
-  //}
-  
+    
   private void addNamedNode(Node n) {
     //this.namedNodes.put(n.getLabel() != null ? n.getLabel() : Integer.toString(n.getPixel()), n);
     this.namedNodes.put(n.getName(), n);
   }
   
-  //public Map<Integer, Node> getNodes(){
-  //  return this.nodes;
-  //}
   public Map<String, Node> getNamedNodes() {
     return this.namedNodes;
   }
   
   //todo : Name nodes.
   public void findLandMarks(){
-    //for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
     for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
       Node node = n.getValue();
       if(node.getNodeColor() == GENERAL_GATES) {
@@ -124,7 +114,6 @@ class Graph {
   */
   
   void draw(int scale) {
-    //for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
     for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
       Node node = n.getValue();
       fill(node.getNodeColor());
