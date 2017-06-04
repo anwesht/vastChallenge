@@ -6,8 +6,10 @@ final color ENTRANCE = color(76.0, 255.0, 0.0);        // green
 final color RANGER_STOPS = color(255.0, 216.0, 0.0);   // yellow
 final color CAMPING = color(255.0, 106.0, 0.0);        // orange
 final color GATES = color(255.0, 0.0, 0.0);            // red
+final color RANGER_BASE = color(255.0, 0.0, 220.0);    // pink
 
 final color WHITE = color(255.0, 255.0, 255.0);        // white to check non road pixels.
+
 Graph g, sensor;
 
 int scale = 5;
@@ -53,7 +55,7 @@ void draw() {
   //g.draw(scale);
   sensor.draw(scale);
   
-  save("graph_representation_bfs");
+  save("outputs/sensorGraph");
 }
 
 /** Create graph representation of the map 

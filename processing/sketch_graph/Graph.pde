@@ -1,5 +1,14 @@
 class Graph {
-  final color WHITE = color(255.0, 255.0, 255.0); 
+  final color GENERAL_GATES = color(0.0, 255.0, 255.0);  // blue
+  final color ENTRANCE = color(76.0, 255.0, 0.0);        // green
+  final color RANGER_STOPS = color(255.0, 216.0, 0.0);   // yellow
+  final color CAMPING = color(255.0, 106.0, 0.0);        // orange
+  final color GATES = color(255.0, 0.0, 0.0);            // red
+  final color RANGER_BASE = color(255.0, 0.0, 220.0);    // pink
+  
+  final color WHITE = color(255.0, 255.0, 255.0);        // white to check non road pixels.
+  final color BLACK = color(0.0, 0.0, 0.0);              // to check road pixels.
+  
   private int width;
   private Map<String, Integer> sensorCounts;
   private Map<String, Node> namedNodes;
@@ -79,7 +88,9 @@ class Graph {
         node.setLabel("camping"+Integer.toString(addSensor("camping")));
       } else if(node.getNodeColor() == GATES) {
         node.setLabel("gates"+Integer.toString(addSensor("gates")));
-      } 
+      } else if (node.getNodeColor() == RANGER_BASE){
+        node.setLabel("rangerBase");
+      }
       
       //debug
       //if(node.getLabel() != null){
