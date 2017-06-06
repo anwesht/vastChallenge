@@ -179,32 +179,36 @@ object VastApp {
 
     val sensorData: DataFrame = spark.read.option("header", true).csv(DATA_FILE)
     writeTripRecord(sensorData).coalesce(1)
-        .write.json("output2/tripRecords")
+        .write.json("output/tripRecords")
 
     writePathRecord(spark, sensorData).coalesce(1)
-        .write.json("output2/pathRecords")
+        .write.json("output/pathRecords")
 
     val singleDayPathRecords = writePathStringRecord(spark, sensorData)
     singleDayPathRecords.coalesce(1)
         .write.option("header", true)
-        .csv("output2/singleDayPathStringRecords")
+        .csv("output/singleDayPathStringRecords")
 
     singleDayPathRecords.groupBy(col("path")).count().coalesce(1)
         .write.option("header", true)
-        .csv("output2/dailyPatternCount")
+        .csv("output/dailyPatternCount")
 
     val multipleDaysPathRecords = writeMultipleDayPathStringRecord(spark, sensorData)
     multipleDaysPathRecords.coalesce(1)
         .write.option("header", true)
-        .csv("output2/multipleDayPathRecord")
+        .csv("output/multipleDayPathRecord")
 
     multipleDaysPathRecords.filter(col("daysSpan") > 1).coalesce(1)
         .write.option("header", true)
-        .csv("output2/multipleDayPathRecordFiltered")
+        .csv("output/multipleDayPathRecordFiltered")
 
     multipleDaysPathRecords.groupBy(col("path")).count().coalesce(1)
         .write.option("header", true)
-        .csv("output2/multipleDayPatternCount")
+        .csv("output/multipleDayPatternCountFiltered")
+
+    multipleDaysPathRecords.filter(col("daysSpan") > 1).groupBy(col("path")).count().coalesce(1)
+        .write.option("header", true)
+        .csv("output/multipleDayPatternCountFiltered")
 
     spark.stop()
   }
