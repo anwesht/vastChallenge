@@ -45,25 +45,36 @@ object VastApp {
     import spark.implicits._
 
     val sensorData: DataFrame = spark.read.option("header", true).csv(DATA_FILE)
-        .withColumn("path", col("gate-name"))
-        .withColumn("isFirst", lit(false))
 
-    sensorData.printSchema()
-    sensorData.filter(col("gate-name").startsWith("entrance") and col("car-type").equalTo("6")).groupBy("gate-name").count.show
+//    sensorData.printSchema()
+//    sensorData.filter(col("gate-name").startsWith("entrance") and col("car-type").equalTo("6")).groupBy("gate-name").count.show
 
     //    grouping test
-      val groupedByCarId = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .mapGroups{ (carId: String, rowList: Iterator[Row]) =>
+    val tripRecords = sensorData.groupByKey(row => row.getAs[String]("car-id"))
+        .flatMapGroups{ (carId: String, rowList: Iterator[Row]) =>
           rowList.foldLeft(List[Tracker]()) {(resList, row: Row) =>
             val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
             Tracker(asUnixTimestamp(localDateTime), asDateTime(localDateTime), asDate(localDateTime), row.getAs[String]("gate-name") ) :: resList
-          }.groupBy(_.date).mapValues(l => l.sortBy(_.unixTimestamp).map(e => (e.dateTime, e.gate))).foldLeft(List[TripRecord]()) {(tripList, v) => TripRecord(carId, v._1, v._2)::tripList}
-//              .foreach{ case(k, v) => TripRecord(carId, k, v)}
+          }.groupBy(_.date)
+              .mapValues(l => l.sortBy(_.unixTimestamp)
+                  .map(e => (e.dateTime, e.gate)))
+              .foldLeft(List[TripRecord]()) {
+                (tripList, v) =>
+                  TripRecord(carId, v._1, v._2)::tripList
+              }
         }
 
-//    val dailyTripData = groupedByCarId.collect()
+    println(sensorData.count)
 
-    groupedByCarId.show(20, false)
+    tripRecords.show(20, false)
+
+    println(tripRecords.getClass)
+
+    println(tripRecords.count)
+    println(tripRecords.distinct().count())
+
+    tripRecords.write.json("tripRecordsFlatMapJson")
+
 
     spark.stop()
     /*val numAs = logData.filter(line => line.contains("a")).count()
