@@ -17,16 +17,8 @@ import org.apache.spark.sql.functions._
 object VastApp {
   val DATA_FILE = "data/lekagulSensorData.csv"
 
-//  case class Record(timestamp: LocalDateTime, carId: String, carType: String, gateName: String)
-  case class Record(timestamp: String, carId: String, carType: String, gateName: String)
-//  case class Records (carId: String, trips: Array[Record])
-  case class Records (carId: String, trips: Map[String, List[Record]])
-  case class TestRecord(test: Map[String, List[(String, String)]])
-  case class TestRecord1(carId: String, stops: List[(String, String)])
-
   case class Tracker(unixTimestamp: Long, dateTime: String, date: String, gate: String)
-  case class TrackerRecord(track: Map[String, List[Tracker]])
-  case class TrackerRecord1(track: Map[String, List[String]])
+  case class TripRecord(carId: String, date: String, path: List[(String, String)])
 
   def asLocalDateTime (d: String): LocalDateTime = {
     LocalDateTime.parse(d, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
@@ -48,7 +40,7 @@ object VastApp {
     val spark = SparkSession
         .builder()
         .appName("Vast Challenge 2017")
-        .master("local[2]")
+        .master("local[*]")
         .getOrCreate()
     import spark.implicits._
 
@@ -60,51 +52,13 @@ object VastApp {
     sensorData.filter(col("gate-name").startsWith("entrance") and col("car-type").equalTo("6")).groupBy("gate-name").count.show
 
     //    grouping test
-    /*val grouped = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .flatMapGroups { (carType, rowList) =>
-          var p = ""
-          var isIn = false
-          Iterator(rowList.map{ r =>
-            if (isIn && r.getAs[String]("gate-name").startsWith("entrance")) {
-              isIn = !isIn
-              p += r.getAs[String]("gate-name")
-              Record(r.getAs[String]("Timestamp"), r.getAs[String]("car-id"), r.getAs[String]("car-type"), r.getAs[String]("gate-name"), p, false )
-            } else {
-              Record(r.getAs[String]("Timestamp"), r.getAs[String]("car-id"), r.getAs[String]("car-type"), r.getAs[String]("gate-name"), p, false )
-            }
-          }.toArray)
-        }*/
-
-   /* val groupedByCarId = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .mapGroups { (carId, rowList) =>
-          TestRecord(rowList.foldLeft(List[(String, String)]()) {(resList, row: Row) =>
-            (asDate(row.getAs[String]("Timestamp")), row.getAs[String]("gate-name")) :: resList
-          }.groupBy(_._1))
-        }*/
-
-      /*val groupedByCarId = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .mapGroups { (carId, rowList) =>
-          TestRecord1(carId, rowList.foldLeft(List[(String, String)]()) {(resList, row: Row) =>
-            (asDate(row.getAs[String]("Timestamp")), row.getAs[String]("gate-name")) :: resList
-          })
-        }*/
-
-//      case class Tracker(unixTimestamp: Long, dateTime: String, date: String, gate: String)
-
-    /*val groupedByCarId = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .mapGroups { (carId: String, rowList: Iterator[Row]) =>
-          rowList.foldLeft(List[Tracker]()) {(resList, row: Row) =>
-              val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
-            Tracker(asUnixTimestamp(localDateTime), asDateTime(localDateTime), asDate(localDateTime), row.getAs[String]("gate-name") ) :: resList
-          }.groupBy(_.date).mapValues(l => l.sortBy(_.unixTimestamp))
-        }*/
       val groupedByCarId = sensorData.groupByKey(row => row.getAs[String]("car-id"))
-        .mapGroups { (carId: String, rowList: Iterator[Row]) =>
-          TrackerRecord1(rowList.foldLeft(List[Tracker]()) {(resList, row: Row) =>
+        .mapGroups{ (carId: String, rowList: Iterator[Row]) =>
+          rowList.foldLeft(List[Tracker]()) {(resList, row: Row) =>
             val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
             Tracker(asUnixTimestamp(localDateTime), asDateTime(localDateTime), asDate(localDateTime), row.getAs[String]("gate-name") ) :: resList
-          }.groupBy(_.date).mapValues(l => l.sortBy(_.unixTimestamp).map(_.gate))
-          )
+          }.groupBy(_.date).mapValues(l => l.sortBy(_.unixTimestamp).map(e => (e.dateTime, e.gate))).foldLeft(List[TripRecord]()) {(tripList, v) => TripRecord(carId, v._1, v._2)::tripList}
+//              .foreach{ case(k, v) => TripRecord(carId, k, v)}
         }
 
 //    val dailyTripData = groupedByCarId.collect()
@@ -116,6 +70,4 @@ object VastApp {
     val numBs = logData.filter(line => line.contains("b")).count()
     println("Lines with a: %s, Lines with b: %s".format(numAs, numBs))  */
   }
-
-  //  def findTrips(I)
 }
