@@ -16,11 +16,17 @@ object VastApp {
 
   case class TripRecord(carId: String, carTypes: String, date: String, timedPath: List[(String, String)])
 
+  case class TripWithElapsedRecord(carId: String, carTypes: String, date: String, totalTime: Long, timedPath: List[(String, String, Long)])
+
   case class PathRecord(carId: String, carType: String, date: String, path: List[String])
 
   case class PathStringRecord(carId: String, carType: String, date: String, path: String)
 
+  case class PathStringRevRecord(carId: String, carType: String, date: String, path: String, pathRev: String)
+
   case class MultiDayPathRecord(carId: String, carType: String, daysSpan: Int, path: String)
+
+  case class PathCount(path: String, count: Int)
 
   def asLocalDateTime(d: String): LocalDateTime = {
     LocalDateTime.parse(d, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
@@ -87,6 +93,46 @@ object VastApp {
     tripRecords
   }
 
+  private def writeTripWithElapsedTimeRecord(spark: SparkSession, sensorData: DataFrame) = {
+    import spark.implicits._
+
+    val groupedByCarId: KeyValueGroupedDataset[String, Row] = sensorData.groupByKey(row =>
+      row.getAs[String]("car-id")
+    )(Encoders.STRING)
+
+    val tripRecords = groupedByCarId.flatMapGroups {
+      (carId: String, rowList: Iterator[Row]) =>
+        rowList.foldLeft(List[Tracker]()) {
+          (resList, row: Row) =>
+            val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
+            Tracker(asUnixTimestamp(localDateTime),
+              asDateTime(localDateTime),
+              asDate(localDateTime),
+              row.getAs[String]("gate-name")) :: resList
+        }.groupBy(_.date)
+            .mapValues(l => l.sortBy(_.unixTimestamp))
+            .foldLeft(List[TripWithElapsedRecord]()) {
+              (tripList, v: (String, List[Tracker])) =>
+                val date: String = v._1
+                val carType: String = v._2.head.carType
+                val startTime: Long = v._2.head.unixTimestamp
+                //                val timeGatePairs: List[(String, String)] = v._2.map(t => (t.dateTime, t.gate))
+
+                val (endTime: Long, timeGateElapsedTriple: List[(String, String, Long)]) = v._2
+                    .foldLeft((Long.MinValue, List[(String, String, Long)]())) {
+                      case ((prevTime: Long, tripleList), t) =>
+                        val elapsedTime = if (prevTime > 0) t.unixTimestamp - prevTime else 0
+
+                        (t.unixTimestamp, (t.dateTime, t.gate, elapsedTime)::tripleList)
+                    }
+
+                TripWithElapsedRecord(carId, carType, date, endTime - startTime, timeGateElapsedTriple) :: tripList
+            }
+    }
+
+    tripRecords
+  }
+
   /**
     * Writes a json file with just the trip gates. Uses the import spark.implicits._ to implicitly supply
     * the Encoders.
@@ -134,13 +180,72 @@ object VastApp {
               .mapValues(l => l.sortBy(_.unixTimestamp))
               .foldLeft(List[PathStringRecord]()) {
                 (tripList, v: (String, List[Tracker])) =>
-                    val date = v._1
-                    val carType = v._2.head.carType
-                    val path = v._2.map(t => t.gate).mkString(":")
-                    PathStringRecord(carId, carType, date, path) :: tripList
+                  val date = v._1
+                  val carType = v._2.head.carType
+                  val path = v._2.map(t => t.gate).mkString(":")
+                  PathStringRecord(carId, carType, date, path) :: tripList
               }
         }
     pathStringRecords
+  }
+
+  /**
+    * Write path as a concatenated string for each car per day, and also the reverse path.
+    * @param spark
+    * @param sensorData
+    */
+  private def writePathRevStringCount(spark: SparkSession, sensorData: DataFrame) = {
+    import spark.implicits._
+
+    val pathStringCountRecords = sensorData.groupByKey(row => row.getAs[String]("car-id"))
+        .flatMapGroups { (carId: String, rowList: Iterator[Row]) =>
+          rowList.foldLeft(List[Tracker]()) { (resList, row: Row) =>
+            val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
+            Tracker(asUnixTimestamp(localDateTime), asDateTime(localDateTime), asDate(localDateTime), row.getAs[String]("gate-name")) :: resList
+          }.groupBy(_.date)
+              .mapValues(l => l.sortBy(_.unixTimestamp))
+              .foldLeft(List[PathStringRevRecord]()) {
+                (tripList, v: (String, List[Tracker])) =>
+                  val date = v._1
+                  val carType = v._2.head.carType
+                  val pathList = v._2.map(t => t.gate)
+                  val path = pathList.mkString(":")
+                  val pathRev = pathList.reverse.mkString(":")
+                  PathStringRevRecord(carId, carType, date, path, pathRev) :: tripList
+              }
+        }
+        .groupByKey {
+          row =>
+            if(row.path > row.pathRev) {
+              row.path.hashCode() + row.pathRev.hashCode() * 31
+            } else {
+              row.pathRev.hashCode() + row.path.hashCode() * 31
+            }
+        }
+        .mapGroups{(_, rowList) =>
+          val (count, path) = rowList.foldLeft((0, "")) { (p, row) =>
+            (p._1 + 1, row.path)
+          }
+          PathCount(path, count)
+        }
+
+    /*.foldLeft(Map[String, Int]()) {
+  (pathCountMap: Map[String, Int], p: PathStringRevRecord) =>
+    if(pathCountMap.contains(p.path)){
+      val newCount: Int = pathCountMap.getOrElse(p.path, 0) + 1
+      pathCountMap + (p.path -> newCount)
+    } else if (pathCountMap.contains(p.pathRev)) {
+      val newCount: Int = pathCountMap.getOrElse(p.pathRev, 0) + 1
+      pathCountMap + (p.pathRev -> newCount)
+    } else {
+      pathCountMap + (p.path -> 1)
+    }
+  //                    pathCountMap
+}.foldLeft (List[PathCount]()) {
+  (l, m) => PathCount(m._1, m._2) :: l
+}*/
+    pathStringCountRecords
+
   }
 
   /**
@@ -178,11 +283,16 @@ object VastApp {
         .getOrCreate()
 
     val sensorData: DataFrame = spark.read.option("header", true).csv(DATA_FILE)
-    writeTripRecord(sensorData).coalesce(1)
-        .write.json("output/tripRecords")
+    /*  writeTripRecord(sensorData).coalesce(1)
+          .write.json("output/tripRecords")*/
 
-    writePathRecord(spark, sensorData).coalesce(1)
-        .write.json("output/pathRecords")
+    /*writePathRecord(spark, sensorData).coalesce(1)
+        .write.json("output/pathRecords")*/
+
+    /*
+    val pathRecords = writePathRecord(spark, sensorData)
+
+    pathRecords.coalesce(1).write.json("output/pathRecords")
 
     val singleDayPathRecords = writePathStringRecord(spark, sensorData)
     singleDayPathRecords.coalesce(1)
@@ -209,7 +319,17 @@ object VastApp {
     multipleDaysPathRecords.filter(col("daysSpan") > 1).groupBy(col("path")).count().coalesce(1)
         .write.option("header", true)
         .csv("output/multipleDayPatternCountFiltered")
+  */
 
+    /*val pathRevStringCount = writePathRevStringCount(spark, sensorData)
+
+    pathRevStringCount.show(20, false)
+        pathRevStringCount.coalesce(1)
+        .write.option("header", true)
+        .csv("outputJun15/pathRevStringCount")
+*/
+    writeTripWithElapsedTimeRecord(spark, sensorData).coalesce(1)
+        .write.json("outputJun15/tripWithElapsedTimeSortedRecord")
     spark.stop()
   }
 }
