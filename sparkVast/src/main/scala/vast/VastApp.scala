@@ -11,6 +11,7 @@ import org.apache.spark.sql.functions._
   */
 object VastApp {
   val DATA_FILE = "data/lekagulSensorData.csv"
+  val DATA_FILE_WITH_WEEK_OF_DAY = "data/sensorDataWithDayOfWeek.csv"
 
   case class Tracker(unixTimestamp: Long, dateTime: String, date: String, gate: String, carType: String = "")
 
@@ -27,6 +28,8 @@ object VastApp {
   case class MultiDayPathRecord(carId: String, carType: String, daysSpan: Int, path: String)
 
   case class PathCount(path: String, count: Int)
+
+  case class SensorData(timestamp: String, carId: String, carType: String, gateName: String, dayOfWeek: String)
 
   def asLocalDateTime(d: String): LocalDateTime = {
     LocalDateTime.parse(d, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
@@ -275,6 +278,18 @@ object VastApp {
     multiDayPathStringRecords
   }
 
+  def findDayOfWeek(ts: String) = {
+    asLocalDateTime(ts).getDayOfWeek match {
+      case DayOfWeek.SUNDAY => "sunday"
+      case DayOfWeek.MONDAY => "monday"
+      case DayOfWeek.TUESDAY => "tuesday"
+      case DayOfWeek.WEDNESDAY => "wednesday"
+      case DayOfWeek.THURSDAY => "thursday"
+      case DayOfWeek.FRIDAY => "friday"
+      case DayOfWeek.SATURDAY => "saturday"
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
         .builder()
@@ -283,6 +298,18 @@ object VastApp {
         .getOrCreate()
 
     val sensorData: DataFrame = spark.read.option("header", true).csv(DATA_FILE)
+
+   /* val sensorDataWithDayOfWeek = sensorData.map{
+      row =>
+        val ts = row.getAs[String]("Timestamp")
+        SensorData(ts, row.getAs[String]("car-id"), row.getAs[String]("car-type"), row.getAs[String]("gate-name"), findDayOfWeek(ts))
+    } (Encoders.product)
+
+    sensorDataWithDayOfWeek.coalesce(1)
+        .write.option("header", true)
+        .csv("outputJun15/sensorDataWithDayOfWeek")*/
+
+//    val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
     /*  writeTripRecord(sensorData).coalesce(1)
           .write.json("output/tripRecords")*/
 
@@ -328,8 +355,10 @@ object VastApp {
         .write.option("header", true)
         .csv("outputJun15/pathRevStringCount")
 */
-    writeTripWithElapsedTimeRecord(spark, sensorData).coalesce(1)
-        .write.json("outputJun15/tripWithElapsedTimeSortedRecord")
+    /*writeTripWithElapsedTimeRecord(spark, sensorData).coalesce(1)
+        .write.json("outputJun15/tripWithElapsedTimeSortedRecord")*/
+
+
     spark.stop()
   }
 }
