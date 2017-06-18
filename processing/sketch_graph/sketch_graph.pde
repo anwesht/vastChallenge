@@ -53,9 +53,12 @@ void draw() {
   //Drawing Graph
   background(255);
   //g.draw(scale);
-  sensor.draw(scale);
+  //sensor.draw(scale);
+  //String path = "entrance0:generalGate4:generalGate7:entrance1";
+  String path = "entrance0:entrance0:generalGate4:generalGate7:generalGateee:entrance1:entrance1";
+  sensor.drawPath(path, scale);
   
-  save("outputs/sensorGraph");
+  //save("outputs/sensorGraph");
 }
 
 /** Create graph representation of the map 

@@ -25,6 +25,10 @@ class Edge {
     this(s, t, pixelDist, new LinkedList<Integer>());
   }
   
+  public Node getTarget() {
+    return this.target;
+  }
+  
   public Edge(int s, int e) {
     this.startPixel = s;
     this.endPixel = e;

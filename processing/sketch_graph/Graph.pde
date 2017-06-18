@@ -1,3 +1,5 @@
+import g4p_controls.*;
+
 class Graph {
   final color GENERAL_GATES = color(0.0, 255.0, 255.0);  // blue
   final color ENTRANCE = color(76.0, 255.0, 0.0);        // green
@@ -157,6 +159,69 @@ class Graph {
         */
       }
     }  
+  }
+  
+  void drawPath(String path, int scale) {
+    Iterator<String> pathNodes = Arrays.asList(path.split(":")).iterator();
+  
+    String currentNodeName = pathNodes.next();
+    int multipleEntryCount = 1;
+    while(pathNodes.hasNext()){
+      String nextNodeName = pathNodes.next();
+      if (this.getNamedNodes().containsKey(currentNodeName)) {
+        Node currentNode = this.getNamedNodes().get(currentNodeName);
+        drawNode(currentNode, scale);
+        if (this.getNamedNodes().containsKey(nextNodeName)) {
+          Edge e = currentNode.getEdge(nextNodeName);
+          if (e != null){
+            multipleEntryCount = 1;
+            drawEdge(e, scale);
+            drawNode(this.getNamedNodes().get(nextNodeName), scale);
+          } else if (currentNodeName.equals(nextNodeName)){
+            multipleEntryCount++;
+            
+            int x = (currentNode.x + 2) * scale;
+            int y = (currentNode.y - 2) * scale;
+            
+            text("X" + multipleEntryCount, x, y);
+          }
+        } else {
+          fill(color(255, 0, 0));
+          int x = (currentNode.x + 12) * scale;
+          int y = (currentNode.y - 2) * scale;
+          line(x , y, (x + 4), (y + 4));
+          line(x , (y + 4), (x + 4), y);
+          text(nextNodeName, x + 12, y + 12);
+          currentNodeName = pathNodes.next();
+          continue;
+        }
+      } else {
+        print("Did not find Node: " + currentNodeName);
+      }
+      currentNodeName = nextNodeName; 
+    }
+  }
+  
+  private void drawNode(Node node, int scale) {
+    print("drawing Node: " + node.getLabel());
+    fill(node.getNodeColor());
+    ellipse(node.x * scale, node.y * scale, 5, 5);
+    if(node.getLabel() != null){
+      text(node.getLabel(), node.x * scale + 6, node.y * scale + 6);
+    }
+  }
+  
+  private void drawEdge(Edge e, int scale) {
+    fill(color(0,0,0));
+    if(e.path.isEmpty()){
+      line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
+    } else {
+      for(Integer i : e.path) {
+        int x = i % this.width;
+        int y = i / this.width;
+        ellipse(x * scale, y * scale, 2, 2);
+      }
+    }
   }
   
   /** Returns adjacency-list representation of graph */

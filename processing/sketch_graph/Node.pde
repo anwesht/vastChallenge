@@ -47,6 +47,28 @@ class Node {
     return this.neighbours;
   }
   
+  public Boolean hasNeighbour(String n) {
+    Boolean hasNeighbour = false;
+    for(Edge e : this.getNeighbours()) {
+      if (e.getTarget().getLabel().equals(n)) {
+        hasNeighbour = true;
+        break;
+      }
+    }
+    return hasNeighbour;
+  }
+  
+  public Edge getEdge(String target) {
+    Edge returnEdge = null;
+    for(Edge e : this.getNeighbours()) {
+      if (e.getTarget().getLabel().equals(target)) {
+        returnEdge = e; 
+        break;
+      }
+    }
+    return returnEdge;
+  }
+  
   public int getPixel(){
     return this.pixel;
   }
