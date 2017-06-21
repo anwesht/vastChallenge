@@ -69,6 +69,30 @@ class Node {
     return returnEdge;
   }
   
+  public List<Edge> getAllEdges(String target) {
+    List<Edge> edgeList = new LinkedList<Edge>();
+    int edgeCount = 0;
+    println("source pixel " + this.pixel);
+    for(Edge e : this.getNeighbours()) {
+      if (e.getTarget().getLabel().equals(target)) {
+        edgeCount++;
+        print(this.getLabel() + " -- " + target + " edge count = " + edgeCount);
+        println(" distance = " + e.pixelDistance);
+        println("path = " + e.path);
+        Boolean isCopy = false;
+        for (Edge innerE : edgeList) {
+          if (innerE.path.size() == e.path.size() - 2 || innerE.path.size() == e.path.size() + 2) {
+            isCopy = true;
+            break;
+          }
+        }
+        if (!isCopy) edgeList.add(e); 
+        //if (edgeCount == 2) break;   //debug.
+      }
+    }
+    return edgeList;
+  }
+  
   public int getPixel(){
     return this.pixel;
   }
@@ -126,7 +150,6 @@ class Node {
            && this.x == n.x 
            && this.y == n.y
            && this.label == n.label);
-           //&& this.label.equals(n.label));
   }
   
   @Override

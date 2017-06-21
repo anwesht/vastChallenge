@@ -81,50 +81,21 @@ class Graph {
     for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
       Node node = n.getValue();
       if(node.getNodeColor() == GENERAL_GATES) {
-        node.setLabel("generalGate"+Integer.toString(addSensor("generalGate")));
+        node.setLabel("general-gate"+Integer.toString(addSensor("general-gate")));
       } else if(node.getNodeColor() == ENTRANCE) {
         node.setLabel("entrance"+Integer.toString(addSensor("entrance")));
       } else if(node.getNodeColor() == RANGER_STOPS) {
-        node.setLabel("rangerStop"+Integer.toString(addSensor("rangerStop")));
+        node.setLabel("ranger-stop"+Integer.toString(addSensor("ranger-stop")));
       } else if(node.getNodeColor() == CAMPING) {
         node.setLabel("camping"+Integer.toString(addSensor("camping")));
       } else if(node.getNodeColor() == GATES) {
-        node.setLabel("gates"+Integer.toString(addSensor("gates")));
+        node.setLabel("gate"+Integer.toString(addSensor("gate")));
       } else if (node.getNodeColor() == RANGER_BASE){
-        node.setLabel("rangerBase");
+        node.setLabel("ranger-base");
       }
-      
-      //debug
-      //if(node.getLabel() != null){
-      //  println("node name: " + node.getLabel());
-      //  println("map node name: " + this.nodes.get(n.getKey()).getLabel());
-      //}
     }
   }
   
-/*  void draw(int scale) {
-    for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
-      Node node = n.getValue();
-      if(node.getLabel() != null){
-        fill(node.getNodeColor());
-        ellipse(node.x * scale, node.y * scale, 5, 5);
-        text(node.getLabel(), node.x * scale + 6, node.y * scale + 6);
-        
-        //println("node name: " + node.getLabel());
-
-        // Draw Edges.
-        for(Edge e: node.getNeighbours()){
-          fill(color(0,0,0));
-          //text(nodes.get(e.endPixel).getLabel(), node.x * scale + 6, node.y * scale - 6);
-          //println("neighbours: " + e.endPixel);
-
-          //line(e.sx * scale, e.sy * scale, e.ex * scale, e.ey * scale);
-          //line(node.x * scale, node.y * scale, e.ex * scale, e.ey * scale);
-        }
-      }
-    }  
-  }
-  */
   
   void draw(int scale) {
     for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
@@ -138,71 +109,19 @@ class Graph {
       // Draw Edges.
       for(Edge e: node.getNeighbours()){
         fill(color(0,0,0));
-        //line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
-        
         if(e.path.isEmpty()){
           line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
         } else {
-          
           for(Integer i : e.path) {
             int x = i % this.width;
             int y = i / this.width;
             ellipse(x * scale, y * scale, 2, 2);
           }
         }
-        
-        // debug: Print the target node as triangle and label it as well. 
-        /*
-        fill(e.target.getNodeColor());
-        triangle(e.target.x * scale, e.target.y * scale, e.target.x * scale + 3, e.target.y * scale + 3, e.target.x * scale - 3, e.target.y * scale + 3);
-        text(e.target.getLabel(), e.target.x * scale + 6, e.target.y * scale + 6);
-        */
       }
     }  
   }
   
-  /*
-  void drawPath(String path, int scale) {
-    Iterator<String> pathNodes = Arrays.asList(path.split(":")).iterator();
-  
-    String currentNodeName = pathNodes.next();
-    int multipleEntryCount = 1;
-    while(pathNodes.hasNext()){
-      String nextNodeName = pathNodes.next();
-      if (this.getNamedNodes().containsKey(currentNodeName)) {
-        Node currentNode = this.getNamedNodes().get(currentNodeName);
-        drawNode(currentNode, scale);
-        if (this.getNamedNodes().containsKey(nextNodeName)) {
-          Edge e = currentNode.getEdge(nextNodeName);
-          if (e != null){
-            multipleEntryCount = 1;
-            drawEdge(e, scale);
-            drawNode(this.getNamedNodes().get(nextNodeName), scale);
-          } else if (currentNodeName.equals(nextNodeName)){
-            multipleEntryCount++;
-            
-            int x = (currentNode.x + 2) * scale;
-            int y = (currentNode.y - 2) * scale;
-            
-            text("X" + multipleEntryCount, x, y);
-          }
-        } else {
-          fill(color(255, 0, 0));
-          int x = (currentNode.x + 12) * scale;
-          int y = (currentNode.y - 2) * scale;
-          line(x , y, (x + 4), (y + 4));
-          line(x , (y + 4), (x + 4), y);
-          text(nextNodeName, x + 12, y + 12);
-          currentNodeName = pathNodes.next();
-          continue;
-        }
-      } else {
-        print("Did not find Node: " + currentNodeName);
-      }
-      currentNodeName = nextNodeName; 
-    }
-  }
-  */
   
   void drawPathFromJson(JSONArray pathNodes, int scale) {
     int multipleEntryCount = 1;
@@ -218,17 +137,22 @@ class Graph {
         Node currentNode = this.getNamedNodes().get(currentNodeName);
         drawNode(currentNode, scale);
         if (this.getNamedNodes().containsKey(nextNodeName)) {
-          Edge e = currentNode.getEdge(nextNodeName);
-          if (e != null){
-            multipleEntryCount = 1;
-            drawEdge(e, scale);
-            float speed = ((float)12/200 * e.pixelDistance * 60 * 60) / nextNodeObj.getInt("_3");
-            int x = (currentNode.x + 2) * scale;
-            int y = (currentNode.y - 2) * scale;
-            text("Speed: " + speed + " mph", x, y);
-
+          List<Edge> edgeList = currentNode.getAllEdges(nextNodeName);
+          int edgeCount = 0;
+          for (Edge e : edgeList) {
+            edgeCount++;
+            if (e != null){
+              multipleEntryCount = 1;
+              if (edgeCount == 1) drawEdge(e, scale);
+              else drawEdgeDup(e, scale, color(150*edgeCount % 255, 0,  0));
+              float speed = ((float)12/200 * e.pixelDistance * 60 * 60) / nextNodeObj.getInt("_3");
+              int x = (currentNode.x + 2) * scale;
+              int y = (currentNode.y - 2 * edgeCount) * scale;
+              text("Speed: " + speed + " mph", x, y);
+            } 
             drawNode(this.getNamedNodes().get(nextNodeName), scale);
-          } else if (currentNodeName.equals(nextNodeName)){
+          }
+          if (currentNodeName.equals(nextNodeName)){
             multipleEntryCount++;
             
             int x = (currentNode.x + 2) * scale;
@@ -243,21 +167,19 @@ class Graph {
           line(x , y, (x + 4), (y + 4));
           line(x , (y + 4), (x + 4), y);
           text(nextNodeName, x + 12, y + 12);
-          //currentNodeName = pathNodes.next();
           if (i > 0) currentNodeObj = (JSONObject) pathNodes.getJSONObject(i-1);
           i--;
           continue;
         }
       } else {
-        print("Did not find Node: " + currentNodeName);
+        println("Did not find Node: " + currentNodeName);
       }
-      //currentNodeName = nextNodeName; 
       currentNodeObj = nextNodeObj;
     }
   }
   
   private void drawNode(Node node, int scale) {
-    print("drawing Node: " + node.getLabel());
+    println("drawing Node: " + node.getLabel());
     fill(node.getNodeColor());
     ellipse(node.x * scale, node.y * scale, 5, 5);
     if(node.getLabel() != null){
@@ -266,7 +188,12 @@ class Graph {
   }
   
   private void drawEdge(Edge e, int scale) {
-    fill(color(0,0,0));
+    drawEdge(e, scale, color(0,0,0));
+  }
+  
+  private void drawEdge(Edge e, int scale, color c) {
+    fill(c);
+    stroke(c);
     if(e.path.isEmpty()){
       line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
     } else {
@@ -278,10 +205,23 @@ class Graph {
     }
   }
   
+  private void drawEdgeDup(Edge e, int scale, color c) {
+    fill(c);
+    stroke(c);
+    if(e.path.isEmpty()){
+      line(e.source.x * scale, e.source.y * scale, e.target.x * scale, e.target.y * scale);
+    } else {
+      for(Integer i : e.path) {
+        int x = i % this.width;
+        int y = i / this.width;
+        ellipse(x * scale, y * scale, 0.2, 0.2);
+      }
+    }
+  }
+  
   /** Returns adjacency-list representation of graph */
   public String toString() {
     String s = "";
-    //for (Map.Entry<Integer, Node> n : this.nodes.entrySet()){
     for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
       Node node = n.getValue();
       s += node.getLabel() + " (" + node.getNeighbours().size() + ")" + " -> ";
@@ -339,14 +279,9 @@ class Graph {
       if(curr.getLabel() != null ) {
         
       }
-      //if (curr == goal) {
-      //  found = true;
-      //  break;
-      //}
       List<Edge> neighbors = curr.getNeighbours();
       ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-      while (it.hasPrevious()) {     
-        //Node next = nodes.get(it.previous().endPixel);
+      while (it.hasPrevious()) {
         Node next = getNamedNodes().get(it.previous().endPixel);
         if (!visited.contains(next)) {
           visited.add(next);
@@ -357,32 +292,4 @@ class Graph {
     }
     return found;
   }
-/*
-  private boolean dfsSearch(Node start, Node goal, 
-      HashMap<Node, Node> parentMap) {
-    HashSet<Node> visited = new HashSet<Node>();
-    Stack<Node> toExplore = new Stack<Node>();
-    toExplore.push(start);
-    boolean found = false;
-
-    // Do the search
-    while (!toExplore.empty()) {
-      Node curr = toExplore.pop();
-      if (curr == goal) {
-        found = true;
-        break;
-      }
-      List<Edge> neighbors = curr.getNeighbours();
-      ListIterator<Edge> it = neighbors.listIterator(neighbors.size());
-      while (it.hasPrevious()) {     
-        Node next = nodes.get(it.previous().endPixel);
-        if (!visited.contains(next)) {
-          visited.add(next);
-          parentMap.put(next, curr);
-          toExplore.push(next);
-        }
-      }
-    }
-    return found;
-  } */
 }
