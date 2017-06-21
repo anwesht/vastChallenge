@@ -207,8 +207,8 @@ class Graph {
   void drawPathFromJson(JSONArray pathNodes, int scale) {
     int multipleEntryCount = 1;
     
-    JSONObject currentNodeObj = pathNodes.getJSONObject(0);
-    for(int i = 1; i < pathNodes.size(); i++) {
+    JSONObject currentNodeObj = pathNodes.getJSONObject(pathNodes.size() - 1);  // data is in reverse order. Therefore, looping backwards
+    for(int i = pathNodes.size() - 2; i >= 0; i--) {
       String currentNodeName = currentNodeObj.getString("_2");
 
       JSONObject nextNodeObj = pathNodes.getJSONObject(i);
@@ -222,6 +222,11 @@ class Graph {
           if (e != null){
             multipleEntryCount = 1;
             drawEdge(e, scale);
+            float speed = ((float)12/200 * e.pixelDistance * 60 * 60) / nextNodeObj.getInt("_3");
+            int x = (currentNode.x + 2) * scale;
+            int y = (currentNode.y - 2) * scale;
+            text("Speed: " + speed + " mph", x, y);
+
             drawNode(this.getNamedNodes().get(nextNodeName), scale);
           } else if (currentNodeName.equals(nextNodeName)){
             multipleEntryCount++;
@@ -239,8 +244,8 @@ class Graph {
           line(x , (y + 4), (x + 4), y);
           text(nextNodeName, x + 12, y + 12);
           //currentNodeName = pathNodes.next();
-          if (i < pathNodes.size()) currentNodeObj = (JSONObject) pathNodes.getJSONObject(i+1);
-          i++;
+          if (i > 0) currentNodeObj = (JSONObject) pathNodes.getJSONObject(i-1);
+          i--;
           continue;
         }
       } else {
