@@ -1,4 +1,7 @@
-import g4p_controls.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 class Graph {
   final color GENERAL_GATES = color(0.0, 255.0, 255.0);  // blue
@@ -233,6 +236,45 @@ class Graph {
       s += "\n";
     }
     return s;
+  }
+  
+  /** Writes csv representation: source,target,distance,pixelDistance,sx,sy,tx,ty */
+  public void writeEdgeInfoCSV(String path) {
+    String s = "source,target,distance,pixelDistance,sx,sy,tx,ty\n";
+    for (Map.Entry<String, Node> n : this.getNamedNodes().entrySet()){
+      Node node = n.getValue();
+      for (Edge e: node.getNeighbours()){
+        if(e.target == null){ s += ",,,,,,,,\n"; break; }
+        s += node.getLabel();
+        s += "," + e.target.getLabel();
+        s += "," + e.distance;
+        s += "," + e.pixelDistance;
+        s += "," + e.source.x;
+        s += "," + e.source.y;
+        s += "," + e.target.x;
+        s += "," + e.target.y;
+        s += "\n";  
+      }
+    }
+    BufferedWriter writer = null;
+    try {
+      File file = new File(path);
+  
+      if (!file.exists()) {
+        file.createNewFile();
+      }
+      FileWriter fw = new FileWriter(file);
+      writer = new BufferedWriter(fw);
+      writer.write(s);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    } finally { 
+      try {
+        if(writer!=null) writer.close();
+      } catch(Exception ex) {
+        System.out.println("Error in closing the BufferedWriter" + ex);
+      }
+    }
   }
   
   public List<Node> dfs(Node start, Node goal) {

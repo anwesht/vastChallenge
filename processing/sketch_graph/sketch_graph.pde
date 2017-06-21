@@ -42,6 +42,7 @@ void setup() {
   
   // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
   sensor = createSensorGraphDFS(g); 
+  //sensor.writeEdgeInfoCSV("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/outputs/graphEdgeInfoCSV.csv");
 }
 
 void draw() {
