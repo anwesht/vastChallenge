@@ -37,19 +37,10 @@ void setup() {
   myImage = loadImage("/Users/atuladhar/projects/vastChallenge/lekagulRoadways_roads_only.png");
   myImage.loadPixels();
   
-  //Map<Integer, String> landMarks = findSensorPositions();    // Look for sensor locations.
-  /** print sensor positions */
-  //for (Map.Entry<String, Integer> l : landMarks.entrySet()) {
-  //  println(l.getKey() + " is at pixel " + l.getValue());
-  //}
-  //myImage.updatePixels();
-  //myImage.save("/Users/atuladhar/projects/vastChallenge/landMarks.png");
-  
   g = createGraph();    // Create the initial graph with all pixel points as nodes.
   g.findLandMarks();    // find landmark nodes in the graph.
   
   // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
-  //sensor = createSensorGraphBFS(g);
   sensor = createSensorGraphDFS(g); 
 }
 
@@ -61,9 +52,6 @@ void draw() {
   background(255);
   //g.draw(scale);
   //sensor.draw(scale);
-  //String path = "entrance0:generalGate4:generalGate7:entrance1";
-  //String path = "entrance0:entrance0:generalGate4:generalGate7:generalGateee:entrance1:entrance1";
-  //sensor.drawPath(path, scale);
 
   JSONObject obj = loadJSONObject("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/test.json");
   JSONArray timedPath = obj.getJSONArray("timedPath");
@@ -152,7 +140,7 @@ Graph createSensorGraphDFS(Graph g){
               pathMap.put(next.getPixel(), currentPath);
               
               sgNode.addWeightedNeighbour(next, distMap.get(next.getPixel()), pathMap.get(next.getPixel()));
-            } else if (!visited.contains(next)) {
+            } else if (!visited.contains(next) && next.getPixel() != sourceNode.getPixel()) {
               distMap.put(next.getPixel(), distMap.get(curr.getPixel()) + 1);
               
               List currentPath = new LinkedList<Integer>(pathMap.get(curr.getPixel()));
@@ -241,7 +229,7 @@ Map<Integer, String> findSensorPositions(){
   for (int i = 0; i < 200*200; i++) {
     color currentPixel = myImage.pixels[i];
     if(currentPixel == GENERAL_GATES) {
-      landMarks.put(i, "genralGate"+Integer.toString(ggCount++));
+      landMarks.put(i, "generalGate"+Integer.toString(ggCount++));
     } else if(currentPixel == ENTRANCE) {
       landMarks.put(i, "entrance"+Integer.toString(eCount++));
     } else if(currentPixel == RANGER_STOPS) {
