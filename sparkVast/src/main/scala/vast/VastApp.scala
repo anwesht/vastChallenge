@@ -25,6 +25,8 @@ object VastApp {
 
   case class PathStringRevRecord(carId: String, carType: String, date: String, path: String, pathRev: String)
 
+  case class PathStringHashRecord(carId: String, carType: String, date: String, path: String, pathRev: String, pathHash: Int, dayOfWeek: String)
+
   case class MultiDayPathRecord(carId: String, carType: String, daysSpan: Int, path: String)
 
   case class PathCount(path: String, count: Int)
@@ -33,6 +35,10 @@ object VastApp {
 
   def asLocalDateTime(d: String): LocalDateTime = {
     LocalDateTime.parse(d, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+  }
+
+  def asLocalDate(d: String): LocalDate = {
+    LocalDate.parse(d, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
   }
 
   def asUnixTimestamp(d: LocalDateTime): Long = {
@@ -251,6 +257,41 @@ object VastApp {
 
   }
 
+  /** June 18
+    * Write path as a concatenated string for each car per day, and also the reverse path.
+    * @param spark
+    * @param sensorData
+    */
+  private def writePathRevStringWithHashCount(spark: SparkSession, sensorData: DataFrame) = {
+    import spark.implicits._
+
+    val pathStringHashRecords = sensorData.groupByKey(row => row.getAs[String]("car-id"))
+        .flatMapGroups { (carId: String, rowList: Iterator[Row]) =>
+          var carType = ""
+          rowList.foldLeft(List[Tracker]()) { (resList, row: Row) =>
+            carType = row.getAs[String]("car-type")
+            val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
+            Tracker(asUnixTimestamp(localDateTime), asDateTime(localDateTime), asDate(localDateTime), row.getAs[String]("gate-name")) :: resList
+          }.groupBy(_.date)
+              .mapValues(l => l.sortBy(_.unixTimestamp))
+              .foldLeft(List[PathStringHashRecord]()) {
+                (tripList, v: (String, List[Tracker])) =>
+                  val date = v._1
+                  val pathList = v._2.map(t => t.gate)
+                  val path = pathList.mkString(":")
+                  val pathRev = pathList.reverse.mkString(":")
+                  var hash = 1
+                  if(path > pathRev) {
+                    hash = path.hashCode() + pathRev.hashCode() * 31
+                  } else {
+                    hash = pathRev.hashCode() + path.hashCode() * 31
+                  }
+                  PathStringHashRecord(carId, carType, date, path, pathRev, hash, findDayOfWeek(asLocalDate(date))) :: tripList
+              }
+        }
+    pathStringHashRecords
+  }
+
   /**
     * Write path as a concatenated string for each car for multiple days. Also counts the number of days.
     * @param spark
@@ -280,6 +321,18 @@ object VastApp {
 
   def findDayOfWeek(ts: String) = {
     asLocalDateTime(ts).getDayOfWeek match {
+      case DayOfWeek.SUNDAY => "sunday"
+      case DayOfWeek.MONDAY => "monday"
+      case DayOfWeek.TUESDAY => "tuesday"
+      case DayOfWeek.WEDNESDAY => "wednesday"
+      case DayOfWeek.THURSDAY => "thursday"
+      case DayOfWeek.FRIDAY => "friday"
+      case DayOfWeek.SATURDAY => "saturday"
+    }
+  }
+
+  def findDayOfWeek(ts: LocalDate) = {
+    ts.getDayOfWeek match {
       case DayOfWeek.SUNDAY => "sunday"
       case DayOfWeek.MONDAY => "monday"
       case DayOfWeek.TUESDAY => "tuesday"
@@ -358,6 +411,12 @@ object VastApp {
     /*writeTripWithElapsedTimeRecord(spark, sensorData).coalesce(1)
         .write.json("outputJun15/tripWithElapsedTimeSortedRecord")*/
 
+    //June 18
+    writePathRevStringWithHashCount(spark, sensorData)
+//        .show(20, false)
+        .coalesce(1)
+        .write.option("header", true)
+        .csv("outputJun18/singleDayPathStringWithHashAndDayOfWeek")
 
     spark.stop()
   }
