@@ -1,4 +1,11 @@
-import java.util.*;
+import java.util.Map;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Stack;
+import java.util.ListIterator;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.LinkedHashMap;
 
 PImage myImage;
 final color GENERAL_GATES = color(0.0, 255.0, 255.0);  // blue
@@ -56,7 +63,15 @@ void draw() {
   //sensor.draw(scale);
   //String path = "entrance0:generalGate4:generalGate7:entrance1";
   String path = "entrance0:entrance0:generalGate4:generalGate7:generalGateee:entrance1:entrance1";
-  sensor.drawPath(path, scale);
+  
+
+  //JSONObject obj = new JSONObject("{\"carId\":\"20150022010045-622\",\"carTypes\":\"\",\"date\":\"2015-08-22\",\"totalTime\":2083,\"timedPath\":[{\"_1\":\"2015-08-22 01:35:28\",\"_2\":\"entrance0\",\"_3\":106},{\"_1\":\"2015-08-22 01:33:42\",\"_2\":\"general-gate1\",\"_3\":180},{\"_1\":\"2015-08-22 01:30:42\",\"_2\":\"ranger-stop2\",\"_3\":208},{\"_1\":\"2015-08-22 01:27:14\",\"_2\":\"ranger-stop0\",\"_3\":221},{\"_1\":\"2015-08-22 01:23:33\",\"_2\":\"general-gate2\",\"_3\":1368},{\"_1\":\"2015-08-22 01:00:45\",\"_2\":\"entrance2\",\"_3\":0}]}");
+  JSONObject obj = loadJSONObject("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/test.json");
+  //print(obj);
+  JSONArray timedPath = obj.getJSONArray("timedPath");
+  
+  //sensor.drawPath(path, scale);
+  sensor.drawPathFromJson(timedPath, scale);
   
   //save("outputs/sensorGraph");
 }

@@ -161,6 +161,7 @@ class Graph {
     }  
   }
   
+  /*
   void drawPath(String path, int scale) {
     Iterator<String> pathNodes = Arrays.asList(path.split(":")).iterator();
   
@@ -199,6 +200,54 @@ class Graph {
         print("Did not find Node: " + currentNodeName);
       }
       currentNodeName = nextNodeName; 
+    }
+  }
+  */
+  
+  void drawPathFromJson(JSONArray pathNodes, int scale) {
+    int multipleEntryCount = 1;
+    
+    JSONObject currentNodeObj = pathNodes.getJSONObject(0);
+    for(int i = 1; i < pathNodes.size(); i++) {
+      String currentNodeName = currentNodeObj.getString("_2");
+
+      JSONObject nextNodeObj = pathNodes.getJSONObject(i);
+      String nextNodeName = nextNodeObj.getString("_2");
+      
+      if (this.getNamedNodes().containsKey(currentNodeName)) {
+        Node currentNode = this.getNamedNodes().get(currentNodeName);
+        drawNode(currentNode, scale);
+        if (this.getNamedNodes().containsKey(nextNodeName)) {
+          Edge e = currentNode.getEdge(nextNodeName);
+          if (e != null){
+            multipleEntryCount = 1;
+            drawEdge(e, scale);
+            drawNode(this.getNamedNodes().get(nextNodeName), scale);
+          } else if (currentNodeName.equals(nextNodeName)){
+            multipleEntryCount++;
+            
+            int x = (currentNode.x + 2) * scale;
+            int y = (currentNode.y - 2) * scale;
+            
+            text("X" + multipleEntryCount, x, y);
+          }
+        } else {
+          fill(color(255, 0, 0));
+          int x = (currentNode.x + 12) * scale;
+          int y = (currentNode.y - 2) * scale;
+          line(x , y, (x + 4), (y + 4));
+          line(x , (y + 4), (x + 4), y);
+          text(nextNodeName, x + 12, y + 12);
+          //currentNodeName = pathNodes.next();
+          if (i < pathNodes.size()) currentNodeObj = (JSONObject) pathNodes.getJSONObject(i+1);
+          i++;
+          continue;
+        }
+      } else {
+        print("Did not find Node: " + currentNodeName);
+      }
+      //currentNodeName = nextNodeName; 
+      currentNodeObj = nextNodeObj;
     }
   }
   
