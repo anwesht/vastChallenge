@@ -462,6 +462,13 @@ object VastApp {
     tripRecords
   }
 
+  /** June 21
+    * Estimates the path with the calculated speed closest to the speed limit.
+    * @param spark
+    * @param sensorData
+    * @param distanceData
+    * @return
+    */
   private def writeEstimateCompleteRecord(spark: SparkSession, sensorData: DataFrame, distanceData: Map[String, List[Float]]) = {
     import spark.implicits._
 
