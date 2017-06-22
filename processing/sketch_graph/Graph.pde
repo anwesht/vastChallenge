@@ -13,7 +13,17 @@ class Graph {
   
   final color WHITE = color(255.0, 255.0, 255.0);        // white to check non road pixels.
   final color BLACK = color(0.0, 0.0, 0.0);              // to check road pixels.
-  
+  final Map<String, String> rename = new HashMap<String, String>() {
+    {
+      put("camping6", "camping5");
+      put("camping3", "camping2");
+      put("camping4", "camping3");
+      put("camping5", "camping4");
+      put("camping2", "camping1");
+      put("camping8", "camping6");
+      put("camping1", "camping8");
+    }
+  };
   private int width;
   private Map<String, Integer> sensorCounts;
   private Map<String, Node> namedNodes;
@@ -30,7 +40,7 @@ class Graph {
     return this.width;
   }
   
-  public int addSensor(String s){
+public int addSensor(String s){
     int count = sensorCounts.containsKey(s) ? sensorCounts.get(s): 0;
     sensorCounts.put(s, count+1);
     return count;
@@ -90,7 +100,12 @@ class Graph {
       } else if(node.getNodeColor() == RANGER_STOPS) {
         node.setLabel("ranger-stop"+Integer.toString(addSensor("ranger-stop")));
       } else if(node.getNodeColor() == CAMPING) {
-        node.setLabel("camping"+Integer.toString(addSensor("camping")));
+        String l = "camping"+Integer.toString(addSensor("camping"));
+        if (rename.containsKey(l)) {
+          node.setLabel(rename.get(l));
+        } else {
+          node.setLabel(l);
+        }
       } else if(node.getNodeColor() == GATES) {
         node.setLabel("gate"+Integer.toString(addSensor("gate")));
       } else if (node.getNodeColor() == RANGER_BASE){

@@ -42,7 +42,7 @@ void setup() {
   
   // Create a minimized graph with only landmarks as nodes. Also store pixel distance.
   sensor = createSensorGraphDFS(g); 
-  //sensor.writeEdgeInfoCSV("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/outputs/graphEdgeInfoCSV.csv");
+  //sensor.writeEdgeInfoCSV("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/outputs/graphEdgeInfoRenamedCSV.csv");
 }
 
 void draw() {
@@ -52,13 +52,13 @@ void draw() {
   //Drawing Graph
   background(255);
   //g.draw(scale);
-  //sensor.draw(scale);
+  sensor.draw(scale);
 
   JSONObject obj = loadJSONObject("/Users/atuladhar/projects/vastChallenge/processing/sketch_graph/test.json");
   JSONArray timedPath = obj.getJSONArray("timedPath");
-  sensor.drawPathFromJson(timedPath, scale);
+  //sensor.drawPathFromJson(timedPath, scale);
   
-  //save("outputs/sensorGraph");
+  //save("outputs/sensorGraphRenamed");
 }
 
 /** Create graph representation of the map 
