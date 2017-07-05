@@ -56,6 +56,11 @@ object VastApp {
                                  pathRev: String, pathHash: Int, dayOfWeek: String, startGate: String,
                                  endGate: String, startTime: String, endTime: String
                                 )
+
+  case class FixedMultipleDayRecord (carId: String, carType: String, totalDaysInPark: Long, totalTime: Long,
+                                        totalDistance: Float, avgSpeed: Float, dailyRecords: List[DailyRecord], path: String,
+                                        pathHash: Int, startGate: String, endGate: String, startTime: String, endTime: String)
+
   //Added June 26
   /* case class SingleDayRecord(startGate: String, endGate: String, startTime: String, endTime: String,
                               totalTime: Long, totalDistance: Float, avgSpeed: Float,
@@ -770,6 +775,10 @@ object VastApp {
     }
   }
 
+  /**
+    * MAIN APPLICATION
+    * @param args
+    */
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
         .builder()
@@ -781,72 +790,6 @@ object VastApp {
 
     val sensorData: DataFrame = spark.read.option("header", true).csv(DATA_FILE)
 
-    /* val sensorDataWithDayOfWeek = sensorData.map{
-      row =>
-        val ts = row.getAs[String]("Timestamp")
-        SensorData(ts, row.getAs[String]("car-id"), row.getAs[String]("car-type"), row.getAs[String]("gate-name"), findDayOfWeek(ts))
-    } (Encoders.product)
-
-    sensorDataWithDayOfWeek.coalesce(1)
-        .write.option("header", true)
-        .csv("outputJun15/sensorDataWithDayOfWeek")*/
-
-    //    val localDateTime = asLocalDateTime(row.getAs[String]("Timestamp"))
-    /*  writeTripRecord(sensorData).coalesce(1)
-          .write.json("output/tripRecords")*/
-
-    /*writePathRecord(spark, sensorData).coalesce(1)
-        .write.json("output/pathRecords")*/
-
-    /*
-    val pathRecords = writePathRecord(spark, sensorData)
-
-    pathRecords.coalesce(1).write.json("output/pathRecords")
-
-    val singleDayPathRecords = writePathStringRecord(spark, sensorData)
-    singleDayPathRecords.coalesce(1)
-        .write.option("header", true)
-        .csv("output/singleDayPathStringRecords")
-
-    singleDayPathRecords.groupBy(col("path")).count().coalesce(1)
-        .write.option("header", true)
-        .csv("output/dailyPatternCount")
-
-    val multipleDaysPathRecords = writeMultipleDayPathStringRecord(spark, sensorData)
-    multipleDaysPathRecords.coalesce(1)
-        .write.option("header", true)
-        .csv("output/multipleDayPathRecord")
-
-    multipleDaysPathRecords.filter(col("daysSpan") > 1).coalesce(1)
-        .write.option("header", true)
-        .csv("output/multipleDayPathRecordFiltered")
-
-    multipleDaysPathRecords.groupBy(col("path")).count().coalesce(1)
-        .write.option("header", true)
-        .csv("output/multipleDayPatternCountFiltered")
-
-    multipleDaysPathRecords.filter(col("daysSpan") > 1).groupBy(col("path")).count().coalesce(1)
-        .write.option("header", true)
-        .csv("output/multipleDayPatternCountFiltered")
-  */
-
-    /*val pathRevStringCount = writePathRevStringCount(spark, sensorData)
-
-    pathRevStringCount.show(20, false)
-        pathRevStringCount.coalesce(1)
-        .write.option("header", true)
-        .csv("outputJun15/pathRevStringCount")
-*/
-    /*writeTripWithElapsedTimeRecord(spark, sensorData).coalesce(1)
-        .write.json("outputJun15/tripWithElapsedTimeSortedRecord")*/
-
-    //June 18
-    /*writePathRevStringWithHashCount(spark, sensorData)
-//        .show(20, false)
-        .coalesce(1)
-        .write.option("header", true)
-        .csv("outputJun18/singleDayPathStringWithHashAndDayOfWeek")*/
-
     // June 21
     val distanceMap: Map[String, List[Float]] = spark.read.option("header", true).csv("data/graphEdgeInfoRenamedCSV.csv")
         .collect().foldLeft(Map[String, List[Float]]()) {
@@ -856,133 +799,20 @@ object VastApp {
         dm updated(key, newVal)
     }
 
-    //    distanceMap.foreach{ case ((k, v: List[Float])) => if (v.length > 1) println(k)}
-    /*  writeSuperCompleteRecord(spark, sensorData, distanceMap)
-//        .show(20, false)
-//        .limit(30)
-        .coalesce(1)
-        .write.json("outputJun21/superCompleteRecord")*/
+    val fixedSingleDayRecord: Dataset[MultiCompleteRecord] = fixSingleDay(spark, sensorData, distanceMap)
+    //    fixedSingleDayRecord
+    //        .show(20, false)
+    //        .coalesce(1).write.json("outputJuly4/singleDayFix")
 
-
-    /*writeEstimateCompleteRecord(spark, sensorData, distanceMap)
-//                .show(20, false)
-        //        .limit(30)
-        .coalesce(1)
-        .write.json("outputJun21/estimateCompleteRecord")
-    */
-
-    // June 26 updated writeEstimateCompleteRecord to include startGate, endGate, startTimeFormatted, endTimeFormatted
-    /* writeEstimateCompleteRecord(spark, sensorData, distanceMap)
-//                        .show(20, false)
-//                .limit(30)
-        .coalesce(1)
-        .write.json("outputJun26/estimateCompleteWithStartEndRecord")*/
-
-    //June 26: Multiple days.
-    //    val estimateCompleteMultipleDayRecord = writeEstimateCompleteMultipleDayRecord(spark, sensorData, distanceMap)
-    /* estimateCompleteMultipleDayRecord
-//        .show(20, false)
-        //                .limit(30)
-        .coalesce(1)
-        .write.json("outputJun27/estimateCompleteMultipleDay")*/
-
-    /*estimateCompleteMultipleDayRecord.filter(d => d.totalDaysInPark > 0)
-        //        .show(20, false)
-        //                .limit(30)
-//        .coalesce(1)
-//        .write.json("outputJun27/estimateCompleteMultipleDayFiltered")
-    println("count : " + estimateCompleteMultipleDayRecord.count())   // 18708
-    println("count filtered: " + estimateCompleteMultipleDayRecord.filter(d => d.totalDaysInPark > 0).count())  // 5850
-    */
-
-    val fixedSingleDayRecord = fixSingleDay(spark, sensorData, distanceMap)
-    println("FIXED COUNT " + fixedSingleDayRecord.count())
-    fixedSingleDayRecord
-//        .show(20, false)
-            .coalesce(1).write.json("outputJuly4/singleDayFix")
-
-
-    /*val combinedFixed: Dataset[CompleteWithStartEndRecord] = goodRecords.unionAll(fixed).map{g =>
-      CompleteWithStartEndRecord(g.carId, g.carType, g.date, g.totalTime , g.totalDistance, g.totalDistance,
-        g.timedPath, g.path, g.pathRev, g.pathHash, g.dayOfWeek,
-        g.startGate, g.endGate, g.startTime, g.endTime)
-    }
-
-    combinedFixed.as[CompleteWithStartEndRecord]
-//        .show(20, false)
-        .coalesce(1)
-            .write.json("outputJun27_V2/singleDayFix")*/
-
-    /*
-    //Why doesn;t this work???
-    combinedFixed.filter(sd => !(sd.endGate.contains("camping") && sd.endGate.contains("entrance"))
-        || sd.startTime == sd.endTime
-        || !(sd.startGate.contains("camping") && sd.startGate.contains("entrance"))).count()*/
-
-
-
-    //    println(combined.count())
-    //    println(combined.filter(c=> c.startTime == c.endTime).count())
+    val multipleDayRecord = multipleDay(spark, fixedSingleDayRecord, distanceMap)
+    multipleDayRecord.show(20, false)
 
     spark.stop()
   }
 
-
-  /* private def fixSingleDay(spark: SparkSession, sensorData: DataFrame, distanceMap: Map[String, List[Float]]) = {
-     import spark.implicits._
-     val singleDayRecord = writeEstimateCompleteRecord(spark, sensorData, distanceMap)
-
-     //collect stranded trips.
-     val goodRecords: Dataset[CompleteWithStartEndRecord] = singleDayRecord.filter(sd => (sd.startGate.contains("camping") || sd.startGate.contains("entrance"))
-         && (sd.endGate.contains("camping") || sd.endGate.contains("entrance"))
-         && sd.startTime != sd.endTime)
-
-     val strandedRecords: Dataset[CompleteWithStartEndRecord] = singleDayRecord.filter(sd => !(sd.endGate.contains("camping") && sd.endGate.contains("entrance"))
-         || sd.startTime == sd.endTime
-         || !(sd.startGate.contains("camping") && sd.startGate.contains("entrance")))
-
-     val fixed: Dataset[CompleteWithStartEndRecord] = strandedRecords.groupByKey(sr => sr.carId).flatMapGroups {
-       (carId: String, rowList: Iterator[CompleteWithStartEndRecord]) =>
-         val groupedCompleteList: List[List[CompleteWithStartEndRecord]] = rowList.toList.sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
-             .foldLeft(("", List.empty[CompleteWithStartEndRecord], List.empty[List[CompleteWithStartEndRecord]])) {
-               case ((prevGate, group, groupedList), r: CompleteWithStartEndRecord) =>
-                 if (group.isEmpty) {
-                   (r.endGate, r :: group, groupedList)
-                 } else {
-                   if (r.endGate.contains("entrance") || r.endGate.contains("ranger-base") || prevGate == r.startGate) {
-                     ("", List.empty[CompleteWithStartEndRecord], group :: groupedList)
-                   } else {
-                     (r.endGate, r :: group, groupedList)
-                   }
-                 }
-             }._3
-
-         val combined: List [CompleteWithStartEndRecord] = groupedCompleteList.map {
-           l: List [CompleteWithStartEndRecord] =>
-             val sorted = l.sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
-             val (combinedTimedPath, totalTime, totalDistance, path, revPath, hash) = sorted
-                 .foldLeft(List.empty[Path], 0: Long, 0: Float, "", "", 0) {
-                   case ((list, tt, td, p, rv, h), c: CompleteWithStartEndRecord) =>
-                     (c.timedPath ++ list, tt + c.totalTime, td + c.totalDistance, p + "||" + c.path, rv + "||" + c.pathRev, h + 31 * c.pathHash)
-                 }
-             val head = sorted.head
-             val tail = sorted.reverse.head
-             val sortedPath: List[Path] = combinedTimedPath.sortBy(r => asUnixTimestamp(asLocalDateTime(r.timestamp)))
-
-             CompleteWithStartEndRecord(carId, head.carType, head.date, totalTime, round(totalDistance), totalDistance * 60 * 60 / totalTime,
-               sortedPath, path, revPath, hash, findDayOfWeek(asLocalDateTime(head.date)),
-               head.startGate, tail.endGate, head.startTime, tail.endTime)
-         }
-
-         combined
-     }
-     fixed.union(goodRecords)
-   }*/
   private def fixSingleDay(spark: SparkSession, sensorData: DataFrame, distanceMap: Map[String, List[Float]]) = {
     import spark.implicits._
     val singleDayRecord = writeEstimateCompleteRecord(spark, sensorData, distanceMap)
-
-    println("SINGLE DAY COUNT: " + singleDayRecord.count())
 
     //collect stranded trips.
     val goodRecords: Dataset[MultiCompleteRecord] = singleDayRecord.filter(sd =>
@@ -995,63 +825,28 @@ object VastApp {
           c.startGate, c.endGate, c.startTime, c.endTime)
     }
 
-    /*val strandedRecords: Dataset[CompleteWithStartEndRecord] = singleDayRecord.filter(sd =>
-      (!sd.startGate.contains("camping") && !sd.startGate.contains("entrance") && !(sd.startGate == "ranger-base"))
-        || (!sd.endGate.contains("camping") && !sd.endGate.contains("entrance") && !(sd.startGate == "ranger-base"))
-      || asUnixTimestamp(sd.startTime) == asUnixTimestamp(sd.endTime)
-//        || sd.startTime == sd.endTime
-    )*/
-
     val strandedRecords: Dataset[MultiCompleteRecord] = singleDayRecord.filter(sd =>
       (!sd.startGate.contains("camping") && !sd.startGate.contains("entrance") && !(sd.startGate == "ranger-base"))
-          || (!sd.endGate.contains("camping") && !sd.endGate.contains("entrance") && !(sd.startGate == "ranger-base"))
+          || (!sd.endGate.contains("camping") && !sd.endGate.contains("entrance") && !(sd.endGate == "ranger-base"))
           || asUnixTimestamp(sd.startTime) == asUnixTimestamp(sd.endTime)
-      //        || sd.startTime == sd.endTime
     )
-
-    val test = strandedRecords.groupByKey(sr=> sr.carId)
 
     val fixed: Dataset[MultiCompleteRecord] = strandedRecords.groupByKey(sr => sr.carId).flatMapGroups {
       (carId: String, rowList) =>
         val sortedList: List[MultiCompleteRecord] = rowList.toList.sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
 
-        if (carId == "20155426115450-821") println("\n\n\n\n\nSIZE = " + sortedList.size )
         val groupedCompleteList: List[MultiCompleteRecord] = sortedList
             .foldLeft(("", List.empty[MultiCompleteRecord], List.empty[MultiCompleteRecord])) {
               case ((prevGate, group, fixedList), r: MultiCompleteRecord) =>
-
-//                if (carId == "20155426115450-821") println("\n\n\n\n\ninfo = " + r.startGate )
-
                 if (group.isEmpty) {
-                  if (carId == "20155426115450-821") println("\n\n\n\n\nempty info = " + r.startGate )
-
                   (r.endGate, r :: group, fixedList)
                 } else {
-                  if (carId == "20155426115450-821") {
-                    println("\n\n\n\n\nnon empty info = " + r.endGate )
-                  }
-
-                  //                  if (r.endGate.contains("entrance") || r.endGate.contains("ranger-base") || prevGate == r.startGate) {
                   if (r.endGate.contains("entrance") || r.endGate.contains("ranger-base") && prevGate != r.startGate) {
 
                     val sorted = (r :: group).sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
-
-                    if (carId == "20155426115450-821") {
-                      println("\n\n\n\n\ninside if = ")
-                      println(sorted.size)
-                    }
-                    /* val (combinedTimedPath: List[Path], totalTime, totalDistance, path, revPath, hash) = sorted
-                         .foldLeft(List.empty[Path], 0: Long, 0: Float, "", "", 0) {
-                           case ((list, tt, td, p, rv, h), c: CompleteWithStartEndRecord) =>
-                             (c.timedPath ++ list, tt + c.totalTime, td + c.totalDistance, p + "||" + c.path, rv + "||" + c.pathRev, h + 31 * c.pathHash)
-                         }
-                     val head = sorted.head
-                     val tail = sorted.reverse.head
-                     val sortedPath: List[Path] = combinedTimedPath.sortBy(r => asUnixTimestamp(asLocalDateTime(r.timestamp)))*/
                     val (totalTime, totalDistance, path, revPath, hash) = sorted
                         .foldLeft(0: Long, 0: Float, "", "", 0) {
                           case ((tt, td, p, rv, h), c: MultiCompleteRecord) =>
-//                            (tt + c.totalTime, td + c.totalDistance, p + "||" + c.path, rv + "||" + c.pathRev, h + 31 * c.pathHash)
                             val newPath = if (p == "") p else p + ":"
                             val newPathRev = if (rv == "") rv else rv + ":"
                             (tt + c.totalTime, td + c.totalDistance, newPath + c.path, newPathRev + c.pathRev, h + 31 * c.pathHash)
@@ -1067,25 +862,6 @@ object VastApp {
 
                     val head = sorted.head
                     val tail = sorted.reverse.head
-                    if (carId == "20155426115450-821") {
-                      println("head: " + head.startGate)
-                      println("head: " + head.endGate)
-                      println("tail: " + tail.startGate)
-                      println("tail: " + tail.endGate)
-                    }
-                    //                    val sortedPath: List[Path] = combinedTimedPath.sortBy(r => asUnixTimestamp(asLocalDateTime(r.timestamp)))
-
-                    //                    val (totalTime, totalDistance, path, revPath, hash) = sorted
-                    //                        .foldLeft( 0: Long, 0: Float, "", "", 0) {
-                    //                          case ((tt, td, p, rv, h), c: CompleteWithStartEndRecord) =>
-                    //                            ( tt + c.totalTime, td + c.totalDistance, p + "||" + c.path, rv + "||" + c.pathRev, h + 31 * c.pathHash)
-                    //                        }
-                    //                    val head = sorted.head
-                    //                    val tail = sorted.reverse.head
-
-                    /* val fix = CompleteWithStartEndRecord(carId, head.carType, head.date, totalTime, round(totalDistance), totalDistance * 60 * 60 / totalTime,
-                       sortedPath, path, revPath, hash, findDayOfWeek(asLocalDateTime(head.date)),
-                       head.startGate, tail.endGate, head.startTime, tail.endTime)*/
 
                     val fix = MultiCompleteRecord(carId, head.carType, head.date, totalTime, round(totalDistance), totalDistance * 60 * 60 / totalTime,
                       path, revPath, calculatedHash, findDayOfWeek(asLocalDateTime(head.startTime)),
@@ -1099,28 +875,88 @@ object VastApp {
             }._3
         groupedCompleteList
     }
+    fixed.union(goodRecords)
+  }
 
-    /* val fixed: Dataset[MultiCompleteRecord] = strandedRecords.groupByKey(sr => sr.carId).flatMapGroups {
-       (carId: String, rowList) =>
-         val t = rowList.map{c =>
-           MultiCompleteRecord(c.carId, c.carType, c.date, c.totalTime, c.totalDistance, c.avgSpeed,
-             c.path, c.pathRev, c.pathHash, c.dayOfWeek,
-             c.startGate, c.endGate, c.startTime, c.endTime)
-         }
-         t
-     }*/
+  private def multipleDay(spark: SparkSession, singleDayRecord: Dataset[MultiCompleteRecord], distanceMap: Map[String, List[Float]]) = {
+    import spark.implicits._
 
-        fixed.union(goodRecords)
-//    fixed
-    //    strandedRecords
+    val multidayCandidates: Dataset[MultiCompleteRecord] = singleDayRecord.filter(sd =>
+      (!sd.startGate.contains("entrance") && !(sd.startGate == "ranger-base"))
+          || (!sd.endGate.contains("entrance") && !(sd.endGate == "ranger-base"))
+    )
+
+    val multipleDayDataset: Dataset[FixedMultipleDayRecord] = multidayCandidates.groupByKey(sr => sr.carId).flatMapGroups {
+      (carId: String, rowList) =>
+        val sortedSingleDayForCar: List[MultiCompleteRecord] = rowList.toList.sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
+
+        val groupedCompleteList: List[FixedMultipleDayRecord] = sortedSingleDayForCar
+            .foldLeft(("", List.empty[MultiCompleteRecord], List.empty[FixedMultipleDayRecord])) {
+              case ((prevGate, group, multiDayList), r: MultiCompleteRecord) =>
+                if (group.isEmpty) {
+                  (r.endGate, r :: group, multiDayList)
+                } else {
+                  if (r.endGate.contains("entrance") || r.endGate.contains("ranger-base")) {
+
+                    if (group.isEmpty) {
+                      println("ERROR !!!!" + carId)
+                    }
+
+                    val sorted = (r :: group).sortBy(r => asUnixTimestamp(asLocalDateTime(r.startTime)))
+
+                    val (_, newHash, totalDaysInPark, dailyRecords: List[DailyRecord]) = sorted.foldLeft(("", 0, 0: Long, List.empty[DailyRecord])) {
+                      case ((prevDate, h, tdp, dailyRecordList), sdr) =>
+                        val startDate = sdr.startTime
+
+                        val daysSince = if (prevDate != "") {
+                          val fromDate = asLocalDate(asDate(asLocalDateTime(prevDate)))
+                          val toDate = asLocalDate(asDate(asLocalDateTime(startDate)))
+                          fromDate.until(toDate, ChronoUnit.DAYS)
+                        } else {
+                          0
+                        }
+                        val dayInPark = daysSince + tdp
+
+                        if (carId == "20152917082955-286") {
+                          println("Start Date: " + startDate)
+                          println("Days Since: " + daysSince)
+                          println("Day in Park: " + dayInPark)
+                        }
+
+                        val dr = DailyRecord(sdr.startGate, sdr.endGate, daysSince, dayInPark, sdr.startTime, sdr.endTime, sdr.path, sdr.pathHash, sdr.totalDistance, sdr.totalTime, sdr.avgSpeed, sdr.dayOfWeek)
+                        (startDate, h + 31*sdr.pathHash, dayInPark, dr::dailyRecordList)
+                    }
+
+                    // --------------
+
+                    val (totalTime, totalDistance, multipleDayPathString, revPath, hash) = sorted
+                        .foldLeft(0: Long, 0: Float, "", "", 0) {
+                          case ((tt, td, p, rv, h), c: MultiCompleteRecord) =>
+                            val newPath = if (p == "") p else p + "||"
+                            val newPathRev = if (rv == "") rv else rv + "||"
+                            (tt + c.totalTime, td + c.totalDistance, newPath + c.path, newPathRev + c.pathRev, h + 31 * c.pathHash)
+                        }
+
+
+                    val avgSpeed = (totalDistance * 60 * 60)/ totalTime
+
+                    val head = sorted.head
+                    val tail = sorted.reverse.head
+
+                    /*case class FixedMultipleDayRecord (carId: String, carType: String, totalDaysInPark: Long, totalTime: Long,
+                                        totalDistance: Float, avgSpeed: Float, dailyRecords: List[DailyRecord], path: String,
+                                        pathHash: Int, startGate: String, endGate: String, startTime: String, endTime: String)*/
+                    val multiDayRecord: FixedMultipleDayRecord = FixedMultipleDayRecord(carId, head.carType, totalDaysInPark, totalTime, totalDistance, avgSpeed, dailyRecords.reverse,
+                      multipleDayPathString, newHash, head.startGate, tail.endGate, head.startTime, tail.endTime)
+
+                    ("", List.empty[MultiCompleteRecord], multiDayRecord :: multiDayList)
+                  } else {
+                    (r.endGate, r :: group, multiDayList)
+                  }
+                }
+            }._3
+        groupedCompleteList
+    }
+    multipleDayDataset
   }
 }
-
-/*
-Caused by: org.codehaus.commons.compiler.CompileException: File 'generated.java', Line 588, Column 84: No applicable constructor/method found for actual parameters
-"java.lang.String, java.lang.String, java.lang.String, long, float, float, scala.collection.Seq, java.lang.String, java.lang.String, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String";
-candidates are:
-"main.scala.vast.VastApp$CompleteWithStartEndRecord(" +
-"java.lang.String, java.lang.String, java.lang.String, long, float, float, scala.collection.immutable.List, java.lang.String, java.lang.String, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)"
-*/
-
